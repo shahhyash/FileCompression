@@ -23,8 +23,11 @@ leaf * create_leaf(char * word)
         leaf * new = (leaf *) malloc(sizeof(leaf));
         new->right = NULL;
         new->left = NULL;
-        new->frequency = 1;
-        new->word = word;
+        new->data = (Code *) malloc(sizeof(Code));
+        new->data->freq = 1;
+        new->data->word = word;
+        //new->frequency = 1;
+        //new->word = word;
         return new;
 }
 
@@ -36,10 +39,10 @@ leaf * insert(leaf * root, char * word, char * file, int line)
         {
                 return create_leaf(word);
         }
-        int compare = strcmp(root->word, word);
+        int compare = strcmp(root->data->word, word);
         if (compare == 0)
         {
-                root->frequency++;
+                root->data->freq++;
                 return root;
         }
         else if (compare < 0)
@@ -73,6 +76,24 @@ leaf * insert(leaf * root, char * word, char * file, int line)
         return NULL;
 }
 
+leaf * lookup(leaf * root, char * data)
+{
+        int compare = strcmp(root->data->word, data);
+        if (compare == 0)
+        {
+                return root;
+        }
+        else if (compare < 0)
+        {
+                return lookup(root->left, data);
+        }
+        else if (compare > 0)
+        {
+                return lookup(root->right, data);
+        }
+        return NULL;
+}
+
 leaf * rotate_right(leaf * a)
 {
         leaf * root = a->left;
@@ -96,14 +117,50 @@ void free_tree(leaf * root)
         {
                 free_tree(root->left);
                 free_tree(root->right);
-                free(root->word);
                 free(root);
         }
 }
 
-int traverse(leaf * root)
+leaf ** output_driver(leaf * root)
 {
+        int size = get_tree_height(root);
+        leaf ** arr = (leaf **) malloc(sizeof(leaf *) * size);
+        int i = output(root, arr, 0);
+        if (i != size)
+                printf("error %d %d\n", i, size);
+        return arr;
+}
+
+int output(leaf * root, leaf ** arr, int i)
+{
+        arr[i++] = root;
+        if (root->right != NULL)
+                i = output(root->right, arr, i);
+        if (root->left != NULL)
+                i = output(root->left, arr, i);
+        return i;
+}
+
+void traverse(leaf * root, int a, int size)
+{
+        // Base case
         if (root == NULL)
-                return 0;
-        return 1;
+                return;
+
+        // Increase distance between levels
+        a += size;
+
+        // Process right child first
+        traverse(root->right, a, size);
+
+        // Print current node after space
+        // count
+        printf("\n");
+        int i;
+        for (i = size; i < a; i++)
+                printf(" ");
+        printf("%s %d\n", root->data->word, root->data->freq);
+
+        // Process left child
+        traverse(root->left, a, size);
 }

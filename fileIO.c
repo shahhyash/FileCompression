@@ -2,7 +2,7 @@
 
 #include <unistd.h>
 
-int better_read(int filedes, void * buf, size_t nbyte, char * file, int line)
+int better_read(int filedes, char * buf, size_t nbyte, char * file, int line)
 {
         ssize_t ret = 1;
         int bytes_read = 0;
@@ -27,7 +27,7 @@ int better_read(int filedes, void * buf, size_t nbyte, char * file, int line)
         return 1;
 }
 
-int better_write(int filedes, void * buf, size_t nbyte, char * file, int line)
+int better_write(int filedes, char * buf, size_t nbyte, char * file, int line)
 {
         ssize_t ret = 1;
         int bytes_written = 0;

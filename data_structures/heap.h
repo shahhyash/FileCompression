@@ -1,24 +1,22 @@
 #ifndef HEAP_H
 #define HEAP_H
 
-typedef struct _heap {
-        char ** data;
+#include "code.h"
+
+typedef struct _min_heap {
+        leaf ** codes;           /* Frequencies, strings, and encoding */
         int size;               /* Number of strings stored */
         int capacity;           /* Total number of strings able to be stored */
-        int heap_type;          /* min = 0, max = 1 */
 } heap;
 
-
-void free_heap(heap * a);
-void grow_heap(heap * h);
-heap * heapify(char ** arr, int arr_length, int capacity, int type);
-char * heap_peek(heap * h);
-char * heap_pop(heap * h);
-void heap_push(char * data, heap * h);
-int max_compare(char * a, char * b);
-int min_compare(char * a, char * b);
-heap * init(int capacity, int type);
+//void free_heap(heap * a);
+heap * heapify(leaf ** arr, int arr_length);
+leaf * heap_peek(heap * h);
+leaf * heap_pop(heap * h);
+void heap_push(leaf * data, heap * h);
+int min_compare(int a, int b);
 void sift_down(int index, heap * h);
 void sift_up(int index, heap * h);
+void swap(int a, int b, heap * h);
 
 #endif

@@ -71,7 +71,7 @@ void sift_down(int index, heap * h)
         int root = index;
         if (get_left(index) < h->size)
         {
-                if (h->codes[index]->data->freq > h->codes[get_left(index)]->data->freq)
+                if (h->codes[index]->freq > h->codes[get_left(index)]->freq)
                 {
                         root = get_left(index);
                 }
@@ -79,7 +79,7 @@ void sift_down(int index, heap * h)
 
         if (get_right(index) < h->size)
         {
-                if (h->codes[index]->data->freq > h->codes[get_right(index)]->data->freq)
+                if (h->codes[index]->freq > h->codes[get_right(index)]->freq)
                 {
                         root = get_right(index);
 
@@ -94,7 +94,7 @@ void sift_down(int index, heap * h)
 
 void sift_up(int i, heap * h)
 {
-        while (h->codes[get_parent(i)]->data->freq > h->codes[i]->data->freq)
+        while (h->codes[get_parent(i)]->freq > h->codes[i]->freq)
         {
                 swap(i, get_parent(i), h);
                 i = get_parent(i);

@@ -28,7 +28,7 @@ leaf * build_Codebook(char ** tokens, int num_tokens)
 
         /* Sort frequencies */
         int size = get_tree_size(root_AVL);
-        printf("Tree height: %d\n", size);
+        printf("Tree size: %d\n", size);
         leaf ** arr = output_driver(root_AVL);
         if (arr == NULL)
         {
@@ -37,12 +37,12 @@ leaf * build_Codebook(char ** tokens, int num_tokens)
         }
         for (i = 0; i < size; i++)
         {
-                printf("Before heapify: Arr data %d: %s\n", i, arr[i]->data->word);
+                printf("Before heapify: Arr data %d: %s\n", i, arr[i]->word);
         }
         heap * h = heapify(arr, size);
         for (i = 0; i < size; i++)
         {
-                printf("After heapify: Arr data %d: %s\n", i, arr[i]->data->word);
+                printf("After heapify: Arr data %d: %s\n", i, arr[i]->word);
         }
 
         /* Create Huffman Code tree */
@@ -59,14 +59,13 @@ leaf * build_Codebook(char ** tokens, int num_tokens)
                 }
                 new->left = a;
                 new->right = b;
-                new->data = (Code *) malloc(sizeof(Code));
-                if (new->data == NULL)
+                if (new == NULL)
                 {
                         fprintf(stderr, "[build_Codebook] NULL returned by malloc. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
                         return NULL;
                 }
-                new->data->word = NULL;
-                new->data->freq = a->data->freq + b->data->freq;
+                new->word = NULL;
+                new->freq = a->freq + b->freq;
                 heap_push(new, h);
         }
         leaf * root_Huff = heap_pop(h);
@@ -84,7 +83,7 @@ leaf * build_Codebook(char ** tokens, int num_tokens)
 int encode_keys(leaf * root, char * s)
 {
         /* Continue traversing tree */
-        if (root->data->word == NULL)
+        if (root->word == NULL)
         {
                 if (root->left != NULL)
                 {
@@ -124,8 +123,8 @@ int encode_keys(leaf * root, char * s)
         /* Found data to encode */
         else
         {
-                root->data->encoding = s;
-                printf("%s\t%s\n", s, root->data->word);
+                root->encoding = s;
+                printf("%s\t%s\n", s, root->word);
         }
         return 0;
 }
@@ -138,7 +137,7 @@ int write_Codebook(char ** tokens, int num_tokens, char * name, leaf * root)
         for (i = 0; i < num_tokens; i++)
         {
                 leaf * cur = lookup(root, tokens[i]);
-                int ret = better_write(fd, cur->data->encoding, strlen(cur->data->encoding), __FILE__, __LINE__);
+                int ret = better_write(fd, cur->encoding, strlen(cur->encoding), __FILE__, __LINE__);
                 if (ret <= 0)
                 {
                         fprintf(stderr, "[write_Codebook] Error returned by better_write. FILE: %s. LINE: %d\n", __FILE__, __LINE__);

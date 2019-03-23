@@ -28,16 +28,8 @@ leaf * create_leaf(char * word)
         }
         new->right = NULL;
         new->left = NULL;
-        new->data = (Code *) malloc(sizeof(Code));
-        if (new->data == NULL)
-        {
-                fprintf(stderr, "[create_leaf] Malloc returned NULL. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
-                return NULL;
-        }
-        new->data->freq = 1;
-        new->data->word = word;
-        //new->frequency = 1;
-        //new->word = word;
+        new->freq = 1;
+        new->word = word;
         return new;
 }
 
@@ -49,10 +41,10 @@ leaf * insert(leaf * root, char * word, char * file, int line)
         {
                 return create_leaf(word);
         }
-        int compare = strcmp(root->data->word, word);
+        int compare = strcmp(root->word, word);
         if (compare == 0)
         {
-                root->data->freq++;
+                root->freq++;
                 return root;
         }
         else if (compare < 0)
@@ -88,7 +80,7 @@ leaf * insert(leaf * root, char * word, char * file, int line)
 
 leaf * lookup(leaf * root, char * data)
 {
-        int compare = strcmp(root->data->word, data);
+        int compare = strcmp(root->word, data);
         if (compare == 0)
         {
                 return root;
@@ -162,7 +154,7 @@ int output(leaf * root, leaf ** arr, int i)
                 fprintf(stderr, "[output] null root passed for index %d. FILE: %s. LINE: %d.\n", i, __FILE__, __LINE__);
                 return i;
         }
-        printf("root %d data: %s\n", i, root->data->word);
+        printf("root %d data: %s\n", i, root->word);
 
         arr[i++] = root;
         if (root->right != NULL)
@@ -190,7 +182,7 @@ void traverse(leaf * root, int a, int size)
         int i;
         for (i = size; i < a; i++)
                 printf(" ");
-        printf("%s %d\n", root->data->word, root->data->freq);
+        printf("%s %d\n", root->word, root->freq);
 
         // Process left child
         traverse(root->left, a, size);

@@ -117,6 +117,7 @@ void free_tree(leaf * root)
 {
         if (root != NULL)
         {
+                free(root->encoding);
                 free_tree(root->left);
                 free_tree(root->right);
                 free(root);

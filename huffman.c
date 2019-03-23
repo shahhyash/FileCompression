@@ -76,6 +76,9 @@ leaf * build_Codebook(char ** tokens, int num_tokens)
                 fprintf(stderr, "[build_Codebook] encode_keys returned error.\n");
                 return NULL;
         }
+        free(arr);
+        free(h);
+        free_huff(root_Huff);
 
         return root_AVL;
 }
@@ -119,6 +122,8 @@ int encode_keys(leaf * root, char * s)
                                 return 1;
                         }
                 }
+                if (strlen(s) > 0)
+                        free(s);
         }
         /* Found data to encode */
         else
@@ -127,6 +132,18 @@ int encode_keys(leaf * root, char * s)
                 printf("%s\t%s\n", s, root->word);
         }
         return 0;
+}
+
+void free_huff(leaf * root)
+{
+
+        if (root != NULL)
+        {
+                free_huff(root->left);
+                free_huff(root->right);
+                if (root->word == NULL)
+                        free(root);
+        }
 }
 
 int write_Codebook(char ** tokens, int num_tokens, char * name, leaf * root)

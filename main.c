@@ -1,5 +1,6 @@
 #include "huffman.h"
 #include "fileIO.h"
+#include "data_structures/AVL.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -146,6 +147,7 @@ int main(int argc, char *argv[])
 				fprintf(stderr, "[main] better_read returned error. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
 			}
 			Token * t = tokenize(buffer, size);
+			free(buffer);
 			int k;
 			for(k = 0; k < t->num_tokens; k++)
 			{
@@ -160,6 +162,13 @@ int main(int argc, char *argv[])
 			{
 				fprintf(stderr, "[main] write_Codebook returned error. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
 			}
+			for(k = 0; k < t->num_tokens; k++)
+			{
+				free(t->tokens[k]);
+			}
+			free_tree(root_AVL);
+			free(t->tokens);
+			free(t);
 		}
 	}
 	else if (compress)

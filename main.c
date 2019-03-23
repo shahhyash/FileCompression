@@ -41,6 +41,7 @@ Token * tokenize(char * s, int len)
 	found_chars = FALSE;
 	int start = 0;
 	int j = 0;
+	//printf("NUM TOKENS %d\n", out->num_tokens);
 	for (i = 0; i < len; i++)
 	{
 		if (isspace(s[i]))
@@ -50,7 +51,9 @@ Token * tokenize(char * s, int len)
 				out->tokens[j] = (char *) malloc(sizeof(char) * (i-start+1));
 				strncpy(out->tokens[j], &s[start], i-start);
 				out->tokens[j][i-start] = '\0';
+				//printf("%s\n", out->tokens[j]);
 				j++;
+				found_chars = FALSE;
 			}
 			out->tokens[j] = (char *) malloc(sizeof(char)*2);
 			strncpy(out->tokens[j], &s[i], 1);
@@ -58,6 +61,8 @@ Token * tokenize(char * s, int len)
 			j++;
 			start = i+1;
 		}
+		else
+			found_chars = TRUE;
 	}
 	return out;
 }
@@ -131,11 +136,30 @@ int main(int argc, char *argv[])
 			int size = lseek(fd, 0, SEEK_END);
 			printf("%d\n", size);
 			char * buffer = (char *) malloc(sizeof(char) * size);
+			if (buffer == NULL)
+			{
+				fprintf(stderr, "[main] NULL returned by malloc. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+			}
 			lseek(fd, 0, SEEK_SET);
-			better_read(fd, buffer, size, __FILE__, __LINE__);
+			if (better_read(fd, buffer, size, __FILE__, __LINE__) != 0)
+			{
+				fprintf(stderr, "[main] better_read returned error. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+			}
 			Token * t = tokenize(buffer, size);
+			int k;
+			for(k = 0; k < t->num_tokens; k++)
+			{
+				printf("Token #%d: %s\n", k, t->tokens[k]);
+			}
 			leaf * root_AVL = build_Codebook(t->tokens, t->num_tokens);
-			write_Codebook(t->tokens, t->num_tokens, file, root_AVL);
+			if (root_AVL == NULL)
+			{
+				fprintf(stderr, "[main] build_Codebook returned NULL. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+			}
+			if(write_Codebook(t->tokens, t->num_tokens, file, root_AVL) != 0)
+			{
+				fprintf(stderr, "[main] write_Codebook returned error. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+			}
 		}
 	}
 	else if (compress)

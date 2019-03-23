@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -Werror -fsanitize=address -std=gnu90
+CFLAGS=-Wall -Werror -g -fsanitize=address -std=gnu90
 OUTPUTS=fileCompressor *.o *.a
 
 all: main.c libFileCompress.a

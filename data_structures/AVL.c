@@ -8,7 +8,7 @@
 
 int get_balance(leaf * a)
 {
-        return abs(get_tree_height(a->right) - get_tree_height(a->left));
+        return get_tree_height(a->left) - get_tree_height(a->right);
 }
 
 int get_tree_height(leaf * a)
@@ -21,9 +21,19 @@ int get_tree_height(leaf * a)
 leaf * create_leaf(char * word)
 {
         leaf * new = (leaf *) malloc(sizeof(leaf));
+        if (new == NULL)
+        {
+                fprintf(stderr, "[create_leaf] Malloc returned NULL. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+                return NULL;
+        }
         new->right = NULL;
         new->left = NULL;
         new->data = (Code *) malloc(sizeof(Code));
+        if (new->data == NULL)
+        {
+                fprintf(stderr, "[create_leaf] Malloc returned NULL. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+                return NULL;
+        }
         new->data->freq = 1;
         new->data->word = word;
         //new->frequency = 1;
@@ -73,7 +83,7 @@ leaf * insert(leaf * root, char * word, char * file, int line)
                 root->right = rotate_right(root->right);
                 return rotate_left(root);
         }
-        return NULL;
+        return root;
 }
 
 leaf * lookup(leaf * root, char * data)
@@ -121,18 +131,39 @@ void free_tree(leaf * root)
         }
 }
 
+int get_tree_size(leaf * root)
+{
+        if (root == NULL)
+                return 0;
+        return 1 + get_tree_size(root->right) + get_tree_size(root->left);
+}
+
 leaf ** output_driver(leaf * root)
 {
-        int size = get_tree_height(root);
+        int size = get_tree_size(root);
         leaf ** arr = (leaf **) malloc(sizeof(leaf *) * size);
+        if (arr == NULL)
+        {
+                fprintf(stderr, "[output_driver] NULL malloc. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+                return NULL;
+        }
         int i = output(root, arr, 0);
         if (i != size)
-                printf("error %d %d\n", i, size);
+        {
+                fprintf(stderr, "[output_driver] error %d %d\n", i, size);
+        }
         return arr;
 }
 
 int output(leaf * root, leaf ** arr, int i)
 {
+        if (root == NULL)
+        {
+                fprintf(stderr, "[output] null root passed for index %d. FILE: %s. LINE: %d.\n", i, __FILE__, __LINE__);
+                return i;
+        }
+        printf("root %d data: %s\n", i, root->data->word);
+
         arr[i++] = root;
         if (root->right != NULL)
                 i = output(root->right, arr, i);

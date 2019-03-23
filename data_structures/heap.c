@@ -1,6 +1,7 @@
 #include "heap.h"
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
 #define get_parent(index) ((int)(((index)-1) / 2))
@@ -27,7 +28,11 @@ void free_heap(heap * h)
 heap * heapify(leaf ** arr, int arr_length)
 {
         heap * h = (heap *) malloc(sizeof(heap));
-        h->capacity = arr_length;
+        if (h == NULL)
+        {
+                fprintf(stderr, "[heapify] NULL returned from malloc. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+                return NULL;
+        }
         h->size = arr_length;
         h->codes = arr;
         sift_down(0, h);
@@ -64,7 +69,7 @@ void heap_push(leaf * l, heap * h)
 void sift_down(int index, heap * h)
 {
         int root = index;
-        if (get_left(index) <= h->size)
+        if (get_left(index) < h->size)
         {
                 if (h->codes[index]->data->freq > h->codes[get_left(index)]->data->freq)
                 {
@@ -72,7 +77,7 @@ void sift_down(int index, heap * h)
                 }
         }
 
-        if (get_right(index) <= h->size)
+        if (get_right(index) < h->size)
         {
                 if (h->codes[index]->data->freq > h->codes[get_right(index)]->data->freq)
                 {

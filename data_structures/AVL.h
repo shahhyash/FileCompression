@@ -6,6 +6,7 @@
 int get_balance(leaf * a);
 int get_tree_height(leaf * a);
 leaf * create_leaf(char * word);
+int get_tree_size(leaf * root);
 leaf * insert (leaf * root, char * word, char * file, int line);
 leaf * lookup(leaf * root, char * data);
 leaf ** output_driver(leaf * root);

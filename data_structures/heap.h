@@ -6,7 +6,6 @@
 typedef struct _min_heap {
         leaf ** codes;           /* Frequencies, strings, and encoding */
         int size;               /* Number of strings stored */
-        int capacity;           /* Total number of strings able to be stored */
 } heap;
 
 //void free_heap(heap * a);

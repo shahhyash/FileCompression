@@ -1,6 +1,7 @@
 #include "huffman.h"
 #include "fileIO.h"
 #include "data_structures/AVL.h"
+#include "compressor.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -153,6 +154,8 @@ int main(int argc, char *argv[])
 			{
 				printf("Token #%d: %s\n", k, t->tokens[k]);
 			}
+
+			// TODO: no need to return the AVL tree. 
 			leaf * root_AVL = build_Codebook(t->tokens, t->num_tokens);
 			if (root_AVL == NULL)
 			{
@@ -177,14 +180,58 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
-			char * file = argv[i];
-			int fd = open(file, O_RDONLY, 00444);
+			// fetch command arguments
+			char * file_path = argv[i++];
+			char * codebook_path = argv[i];
+
+			// start by building a list of tokens for file to compress
+			int fd = open(file_path, O_RDONLY, 00444);
 			if (fd == -1)
 			{
-				fprintf(stderr, "Error opening file %s. FILE: %s. LINE %d.\n", file, __FILE__, __LINE__);
+				fprintf(stderr, "Error opening file %s. FILE: %s. LINE %d.\n", file_path, __FILE__, __LINE__);
+			}
+			int size = lseek(fd, 0, SEEK_END);
+			printf("%d\n", size);
+			char * buffer = (char *) malloc(sizeof(char) * size);
+			if (buffer == NULL)
+			{
+				fprintf(stderr, "[main] NULL returned by malloc. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+			}
+			lseek(fd, 0, SEEK_SET);
+			if (better_read(fd, buffer, size, __FILE__, __LINE__) != 0)
+			{
+				fprintf(stderr, "[main] better_read returned error. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+			}
+			Token * t = tokenize(buffer, size);
+			free(buffer);
+			close(fd);
+
+			// build tree from codebook
+			fd = open(codebook_path, O_RDONLY, 00444);
+			if (fd == -1)
+			{
+				fprintf(stderr, "Error opening file %s. FILE: %s. LINE %d.\n", codebook_path, __FILE__, __LINE__);
 			}
 
-			leaf * codebook = read_Codebook(fd);
+			leaf * codebook = read_Codebook(fd, 1);
+			close(fd);
+
+			// finally, create a new file with the same name and hcz extension and compress it.
+			char * file_name = strcat(file_path, ".hcz");
+    		fd = open(file_name, O_WRONLY | O_CREAT, 00666);
+
+			compress_file(fd, t->tokens, t->num_tokens, codebook);
+
+			// free allocated memory for codebook and tokens
+			int k;
+			for(k = 0; k < t->num_tokens; k++)
+			{
+				free(t->tokens[k]);
+			}
+			free(t->tokens);
+			free(t);
+			free_tree(codebook);
+
 			close(fd);
 		}
 	}

@@ -7,7 +7,7 @@ leaf * build_Codebook(char ** tokens, int num_tokens);
 int encode_keys(leaf * root, char * s);
 void free_huff(leaf * root);
 int write_Codebook(int fd, leaf * root);
-leaf * read_Codebook(int fd);
+leaf * read_Codebook(int fd, int compress);
 char * lookup_token(leaf * root, char * encoding);
 
 #endif

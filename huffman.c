@@ -154,8 +154,8 @@ void free_huff(leaf * root)
         }
 }
 
-// TODO: Account for reading special characters
-leaf * read_Codebook(int fd)
+// use AVL tree for compress (1) and Huffman for decompress (0)
+leaf * read_Codebook(int fd, int compress)
 {
         printf("[read_Codebook] file descriptor: %d\n", fd);
         int size = lseek(fd, 0, SEEK_END);
@@ -176,7 +176,14 @@ leaf * read_Codebook(int fd)
         int encoding_chars = 0;
         int word_chars = 0;
 
-        leaf * root = create_leaf(NULL);
+        leaf * root = NULL;
+
+        // if we'r building the huffman tree, we need an initial empty node
+        if(!compress)
+        {
+                root = create_leaf(NULL);
+        }
+
         char * cur_encoding = NULL;
 
         int i;
@@ -212,42 +219,51 @@ leaf * read_Codebook(int fd)
 
                         if (cur_encoding) 
                         {
-                                leaf * cur_leaf = create_leaf(word);
-                                cur_leaf->encoding = cur_encoding;
-                                
-                                int encoding_size = strlen(cur_encoding);
-                                leaf * parent_ptr = root;
-                                for(j=0; j<encoding_size-1; j++)
+                                if(compress)
                                 {
-                                        char move = cur_encoding[j];
-                                        if(move == '0')
+                                        root = insert(root, word, __FILE__, __LINE__);
+                                        leaf * cur_leaf = lookup(root, word);
+                                        cur_leaf->encoding = cur_encoding;
+                                }
+                                else
+                                {
+                                        leaf * cur_leaf = create_leaf(word);
+                                        cur_leaf->encoding = cur_encoding;
+                                        
+                                        int encoding_size = strlen(cur_encoding);
+                                        leaf * parent_ptr = root;
+                                        for(j=0; j<encoding_size-1; j++)
                                         {
-                                                if(parent_ptr->left == NULL)
+                                                char move = cur_encoding[j];
+                                                if(move == '0')
                                                 {
-                                                        parent_ptr->left = create_leaf(NULL); 
+                                                        if(parent_ptr->left == NULL)
+                                                        {
+                                                                parent_ptr->left = create_leaf(NULL); 
+                                                        }
+                                                        parent_ptr = parent_ptr->left;                                                
                                                 }
-                                                parent_ptr = parent_ptr->left;                                                
+                                                if(move == '1')
+                                                {
+                                                        if(parent_ptr->right == NULL)
+                                                        {
+                                                                parent_ptr->right = create_leaf(NULL);
+                                                        }
+                                                        parent_ptr = parent_ptr->right;
+                                                }       
                                         }
-                                        if(move == '1')
+                                        
+                                        char move = cur_encoding[j];
+                                        
+                                        if(move == '0') 
                                         {
-                                                if(parent_ptr->right == NULL)
-                                                {
-                                                        parent_ptr->right = create_leaf(NULL);
-                                                }
-                                                parent_ptr = parent_ptr->right;
+                                                parent_ptr->left = cur_leaf;
+                                        }
+                                        
+                                        if(move == '1') {
+                                                parent_ptr->right = cur_leaf;
                                         }       
                                 }
-                                
-                                char move = cur_encoding[j];
-                                
-                                if(move == '0') 
-                                {
-                                        parent_ptr->left = cur_leaf;
-                                }
-                                
-                                if(move == '1') {
-                                        parent_ptr->right = cur_leaf;
-                                }       
 
                                 cur_encoding = NULL;
                         }

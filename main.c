@@ -39,6 +39,12 @@ Token * tokenize(char * s, int len)
 		else
 			found_chars = TRUE;
 	}
+
+	if (found_chars)
+	{
+		out->num_tokens++;
+	}
+
 	out->tokens = (char **) malloc(sizeof(char *) * out->num_tokens);
 	found_chars = FALSE;
 	int start = 0;
@@ -66,6 +72,17 @@ Token * tokenize(char * s, int len)
 		else
 			found_chars = TRUE;
 	}
+
+	if (found_chars)
+	{
+		out->tokens[j] = (char *) malloc(sizeof(char) * (i-start+1));
+		strncpy(out->tokens[j], &s[start], i-start);
+		out->tokens[j][i-start] = '\0';
+		//printf("%s\n", out->tokens[j]);
+		j++;
+		found_chars = FALSE;
+	}
+
 	return out;
 }
 
@@ -244,8 +261,54 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
-			//char * file = argv[i++];
-			//char * codebook = argv[i];
+			char * file_path = argv[i++];
+			char * codebook_path = argv[i];
+
+			// start by reading the compressed file
+			int fd = open(file_path, O_RDONLY, 00444);
+			if (fd == -1)
+			{
+				fprintf(stderr, "Error opening file %s. FILE: %s. LINE %d.\n", file_path, __FILE__, __LINE__);
+			}
+			int size = lseek(fd, 0, SEEK_END);
+			printf("%d\n", size);
+			char * buffer = (char *) malloc(sizeof(char) * size);
+			if (buffer == NULL)
+			{
+				fprintf(stderr, "[main] NULL returned by malloc. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+			}
+			lseek(fd, 0, SEEK_SET);
+			if (better_read(fd, buffer, size, __FILE__, __LINE__) != 0)
+			{
+				fprintf(stderr, "[main] better_read returned error. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+			}
+			close(fd);
+
+			// read the stored codebook and generate Huffman Tree
+			fd = open(codebook_path, O_RDONLY, 00444);
+			if (fd == -1)
+			{
+				fprintf(stderr, "Error opening file %s. FILE: %s. LINE %d.\n", codebook_path, __FILE__, __LINE__);
+			}
+			leaf * codebook = read_Codebook(fd, 0);
+			close(fd);
+
+			// remove the '.hcz' extension from the compressed path
+			int decompressed_path_size = strlen(file_path) - 4*sizeof(char);
+			char * decompressed_path = malloc(decompressed_path_size+1);
+			memcpy(decompressed_path, file_path, decompressed_path_size);
+			decompressed_path[decompressed_path_size] = '\0';
+
+			// create/open file at decompressed path
+    		fd = open(decompressed_path, O_WRONLY | O_CREAT, 00666);
+
+			// decompress file then write to original location
+			decompress_file(fd, buffer, size, codebook);
+
+			// free and close resources
+			free_huff(codebook);
+			free(buffer);
+			close(fd);
 		}
 	}
 	return 0;

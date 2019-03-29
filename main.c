@@ -177,8 +177,15 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
-			//char * file = argv[i++];
-			//char * codebook = argv[i];
+			char * file = argv[i];
+			int fd = open(file, O_RDONLY, 00444);
+			if (fd == -1)
+			{
+				fprintf(stderr, "Error opening file %s. FILE: %s. LINE %d.\n", file, __FILE__, __LINE__);
+			}
+
+			leaf * codebook = read_Codebook(fd);
+			close(fd);
 		}
 	}
 	else if (decompress)

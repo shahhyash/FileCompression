@@ -1,8 +1,9 @@
 #include "huffman.h"
 #include "data_structures/AVL.h"
+#include "data_structures/code.h"
 #include "data_structures/heap.h"
 #include "fileIO.h"
-
+#include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -153,26 +154,138 @@ void free_huff(leaf * root)
         }
 }
 
+// TODO: Account for reading special characters
 leaf * read_Codebook(int fd)
 {
+        printf("[read_Codebook] file descriptor: %d\n", fd);
         int size = lseek(fd, 0, SEEK_END);
+        printf("[read_Codebook] file size: %d\n", size);
         char * buffer = (char *) malloc(sizeof(char) * size);
         if (buffer == NULL)
         {
-                fprintf(stderr, "[read_Codebook] NULL returned by malloc. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+                fprintf(stderr, "[main] NULL returned by malloc. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
         }
 
         lseek(fd, 0, SEEK_SET);
-        if (better_read(fd, buffer, size, __FILE__, __LINE__) != 0)
+        int ret = better_read(fd, buffer, size, __FILE__, __LINE__);
+        if (ret == 0)
         {
-                fprintf(stderr, "[main] better_read returned error. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+                fprintf(stderr, "[main] better_read returned error code %s. FILE: %s. LINE: %d.\n", strerror(ret), __FILE__, __LINE__);
         }
 
-        
+        int encoding_chars = 0;
+        int word_chars = 0;
+
+        leaf * root = create_leaf(NULL);
+        char * cur_encoding = NULL;
+
+        int i;
+        for (i=0; i<size; i++) {
+                // found encoding terminal
+                if (buffer[i] == '\t') {
+                        char * encoding = (char*) malloc(sizeof(char) * (encoding_chars + 1));
+                        int j;
+                        for(j=0; j<encoding_chars; j++)
+                        {
+                                encoding[j] = buffer[i-encoding_chars+j];
+                        }
+                        encoding[encoding_chars] = '\0';
+                        encoding_chars = 0;
+                        word_chars = 0;
+                        cur_encoding = encoding;
+                }
+                ++encoding_chars;
+                
+                // found word terminal
+                if (buffer[i] == '\n')
+                {
+                        word_chars = word_chars - 1;    // ignore tab
+                        char * word = (char*) malloc(sizeof(char) * (word_chars + 1));
+                        int j;
+                        for(j=0; j<word_chars; j++)
+                        {
+                                word[j] = buffer[i-word_chars+j];
+                        }
+                        word[word_chars] = '\0';
+                        encoding_chars = 0;
+                        word_chars = 0;
+
+                        if (cur_encoding) 
+                        {
+                                leaf * cur_leaf = create_leaf(word);
+                                cur_leaf->encoding = cur_encoding;
+                                
+                                int encoding_size = strlen(cur_encoding);
+                                leaf * parent_ptr = root;
+                                for(j=0; j<encoding_size-1; j++)
+                                {
+                                        char move = cur_encoding[j];
+                                        if(move == '0')
+                                        {
+                                                if(parent_ptr->left == NULL)
+                                                {
+                                                        parent_ptr->left = create_leaf(NULL); 
+                                                }
+                                                parent_ptr = parent_ptr->left;                                                
+                                        }
+                                        if(move == '1')
+                                        {
+                                                if(parent_ptr->right == NULL)
+                                                {
+                                                        parent_ptr->right = create_leaf(NULL);
+                                                }
+                                                parent_ptr = parent_ptr->right;
+                                        }       
+                                }
+                                
+                                char move = cur_encoding[j];
+                                
+                                if(move == '0') 
+                                {
+                                        parent_ptr->left = cur_leaf;
+                                }
+                                
+                                if(move == '1') {
+                                        parent_ptr->right = cur_leaf;
+                                }       
+
+                                cur_encoding = NULL;
+                        }
+                        
+                }
+                ++word_chars;
+        }
 
         free(buffer);
+        return root;
+}
 
-        return NULL;
+// given the codebook tree and an encoded string, this function returns the token stored.
+// returns NULL if encoding was not found
+char * lookup_token(leaf * root, char * encoding) 
+{
+        if(root == NULL) return NULL;
+
+        int encoding_size = strlen(encoding);
+        int i;
+        leaf * ptr = root;
+        for(i=0; i<encoding_size; i++)
+        {
+                char move = encoding[i];
+                if(move == '0')
+                {
+                        ptr = ptr->left;
+                }
+                if(move == '1')
+                {
+                        ptr = ptr->right;
+                }
+        }
+
+        if (ptr)
+                return ptr->word;
+
+        return NULL;        
 }
 
 int write_Codebook(int fd, leaf * root)

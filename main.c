@@ -158,10 +158,7 @@ int main(int argc, char *argv[])
 			{
 				fprintf(stderr, "[main] build_Codebook returned NULL. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
 			}
-			if(write_Codebook(t->tokens, t->num_tokens, file, root_AVL) != 0)
-			{
-				fprintf(stderr, "[main] write_Codebook returned error. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
-			}
+
 			for(k = 0; k < t->num_tokens; k++)
 			{
 				free(t->tokens[k]);

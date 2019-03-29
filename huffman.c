@@ -76,6 +76,13 @@ leaf * build_Codebook(char ** tokens, int num_tokens)
                 fprintf(stderr, "[build_Codebook] encode_keys returned error.\n");
                 return NULL;
         }
+
+        /* write codebook to file using huffman tree */
+        char * file_name = "HuffmanCodebook";
+        int fd = open(file_name, O_WRONLY | O_CREAT, 00666);
+        write_Codebook(fd, root_Huff);
+        close(fd);
+
         free(arr);
         free(h);
         free_huff(root_Huff);
@@ -146,20 +153,53 @@ void free_huff(leaf * root)
         }
 }
 
-int write_Codebook(char ** tokens, int num_tokens, char * name, leaf * root)
+leaf * read_Codebook(int fd)
 {
-        char * file_name = strcat(name, ".hcz");
-        int fd = open(file_name, O_WRONLY | O_CREAT, 00666);
-        int i;
-        for (i = 0; i < num_tokens; i++)
+        int size = lseek(fd, 0, SEEK_END);
+        char * buffer = (char *) malloc(sizeof(char) * size);
+        if (buffer == NULL)
         {
-                leaf * cur = lookup(root, tokens[i]);
-                int ret = better_write(fd, cur->encoding, strlen(cur->encoding), __FILE__, __LINE__);
-                if (ret <= 0)
-                {
-                        fprintf(stderr, "[write_Codebook] Error returned by better_write. FILE: %s. LINE: %d\n", __FILE__, __LINE__);
-                }
+                fprintf(stderr, "[read_Codebook] NULL returned by malloc. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
         }
-        close(fd);
+
+        lseek(fd, 0, SEEK_SET);
+        if (better_read(fd, buffer, size, __FILE__, __LINE__) != 0)
+        {
+                fprintf(stderr, "[main] better_read returned error. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+        }
+
+        
+
+        free(buffer);
+
+        return NULL;
+}
+
+int write_Codebook(int fd, leaf * root)
+{
+        if (root->word == NULL)
+        {
+                if (root->left != NULL)
+                {
+                        write_Codebook(fd, root->left);
+                }
+
+                if (root->right != NULL)
+                {
+                        write_Codebook(fd, root->right);                
+                }
+        } else {
+                char * tab = "\t";
+                char * newline = "\n";
+                        
+                int word_size = strlen(root->word);
+                int encoding_size = strlen(root->encoding);
+
+                better_write(fd, root->encoding, encoding_size, __FILE__, __LINE__);
+                better_write(fd, tab, sizeof(char), __FILE__, __LINE__);
+                better_write(fd, root->word, word_size, __FILE__, __LINE__);
+                better_write(fd, newline, sizeof(char), __FILE__, __LINE__);
+        }
+
         return 0;
 }

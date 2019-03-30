@@ -5,8 +5,8 @@ OUTPUTS=fileCompressor *.o *.a
 all: main.c libFileCompress.a
 	$(CC) $(CFLAGS) -o fileCompressor main.c libFileCompress.a
 
-libFileCompress.a: AVL.o fileIO.o huffman.o heap.o
-	ar -rs libFileCompress.a AVL.o fileIO.o huffman.o heap.o
+libFileCompress.a: AVL.o fileIO.o huffman.o heap.o compressor.o
+	ar -rs libFileCompress.a AVL.o fileIO.o huffman.o heap.o compressor.o
 
 AVL.o: data_structures/AVL.c data_structures/AVL.h
 	$(CC) $(CFLAGS) -c data_structures/AVL.c
@@ -19,6 +19,9 @@ fileIO.o: fileIO.c fileIO.h
 
 huffman.o: huffman.c huffman.h
 	$(CC) $(CFLAGS) -c huffman.c
+
+compressor.o: compressor.c compressor.h
+	$(CC) $(CFLAGS) -c compressor.c
 
 clean:
 	rm $(OUTPUTS)

@@ -80,6 +80,10 @@ leaf * insert(leaf * root, char * word, char * file, int line)
 
 leaf * lookup(leaf * root, char * data)
 {
+        if (root == NULL)
+        {
+                return NULL;
+        }
         int compare = strcmp(root->word, data);
         if (compare == 0)
         {
@@ -120,6 +124,19 @@ void free_tree(leaf * root)
                 free(root->encoding);
                 free_tree(root->left);
                 free_tree(root->right);
+                free(root);
+        }
+}
+
+void free_full_tree(leaf * root)
+{
+        if (root != NULL)
+        {
+                printf("freed %s %s\n", root->encoding, root->word);
+                free_full_tree(root->left);
+                free_full_tree(root->right);
+                free(root->encoding);
+                free(root->word);
                 free(root);
         }
 }
@@ -165,26 +182,25 @@ int output(leaf * root, leaf ** arr, int i)
         return i;
 }
 
-void traverse(leaf * root, int a, int size)
+void print2D(leaf * root, int space)
 {
-        // Base case
-        if (root == NULL)
-                return;
+        if (root==NULL) return;
 
-        // Increase distance between levels
-        a += size;
+        space += 8;
 
-        // Process right child first
-        traverse(root->right, a, size);
-
-        // Print current node after space
-        // count
+        print2D(root->right, space);
         printf("\n");
         int i;
-        for (i = size; i < a; i++)
+        for(i = 8; i < space; i++)
+        {
                 printf(" ");
-        printf("%s %d\n", root->word, root->freq);
+        }
+        printf("word: %s\tencoding: %s\tfreq: %d", root->word, root->encoding, root->freq);
+        print2D(root->left, space);
+}
 
-        // Process left child
-        traverse(root->left, a, size);
+void traverse(leaf * root)
+{
+        print2D(root, 0);
+        printf("\n");
 }

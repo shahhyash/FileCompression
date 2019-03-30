@@ -14,6 +14,11 @@ int output(leaf * root, leaf ** arr, int i);
 leaf * rotate_right (leaf * a);
 leaf * rotate_left (leaf * a);
 void free_tree(leaf * root);
-void traverse (leaf * root, int a, int size);
+void free_full_tree(leaf * root);
+
+
+void print2D(leaf * root, int space);
+
+void traverse(leaf * root);
 
 #endif

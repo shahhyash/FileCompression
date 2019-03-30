@@ -1,7 +1,6 @@
 #include "huffman.h"
 #include "fileIO.h"
 #include "data_structures/AVL.h"
-#include "compressor.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,6 +11,8 @@
 
 #define TRUE 1
 #define FALSE 0
+#define ERR 1
+#define DEBUG 0
 
 typedef struct _Token {
 	char ** tokens;
@@ -138,6 +139,11 @@ int main(int argc, char *argv[])
 			break;
 		}
 	}
+	if (num_flags == 0)
+	{
+		fprintf(stderr, "[main] No flags found\n");
+		return ERR;
+	}
 	if (build)
 	{
 		if(recursive)
@@ -147,10 +153,11 @@ int main(int argc, char *argv[])
 		else
 		{
 			char * file = argv[i];
-			int fd = open(file, O_RDONLY, 00444);
+			int fd = open(file, O_RDONLY, 00600);
 			if (fd == -1)
 			{
 				fprintf(stderr, "Error opening file %s. FILE: %s. LINE %d.\n", file, __FILE__, __LINE__);
+				return ERR;
 			}
 			int size = lseek(fd, 0, SEEK_END);
 			printf("%d\n", size);
@@ -158,25 +165,28 @@ int main(int argc, char *argv[])
 			if (buffer == NULL)
 			{
 				fprintf(stderr, "[main] NULL returned by malloc. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+				return ERR;
 			}
 			lseek(fd, 0, SEEK_SET);
-			if (better_read(fd, buffer, size, __FILE__, __LINE__) != 0)
+			if (better_read(fd, buffer, size, __FILE__, __LINE__) != 1)
 			{
 				fprintf(stderr, "[main] better_read returned error. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+				return ERR;
 			}
 			Token * t = tokenize(buffer, size);
 			free(buffer);
 			int k;
 			for(k = 0; k < t->num_tokens; k++)
 			{
-				printf("Token #%d: %s\n", k, t->tokens[k]);
+				if(DEBUG) printf("Token #%d: %s\n", k, t->tokens[k]);
 			}
 
-			// TODO: no need to return the AVL tree. 
+			// TODO: no need to return the AVL tree.
 			leaf * root_AVL = build_Codebook(t->tokens, t->num_tokens);
 			if (root_AVL == NULL)
 			{
 				fprintf(stderr, "[main] build_Codebook returned NULL. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+				return ERR;
 			}
 
 			for(k = 0; k < t->num_tokens; k++)
@@ -202,42 +212,56 @@ int main(int argc, char *argv[])
 			char * codebook_path = argv[i];
 
 			// start by building a list of tokens for file to compress
-			int fd = open(file_path, O_RDONLY, 00444);
+			int fd = open(file_path, O_RDONLY, 00600);
 			if (fd == -1)
 			{
 				fprintf(stderr, "Error opening file %s. FILE: %s. LINE %d.\n", file_path, __FILE__, __LINE__);
+				return ERR;
 			}
 			int size = lseek(fd, 0, SEEK_END);
-			printf("%d\n", size);
+			//printf("%d\n", size);
 			char * buffer = (char *) malloc(sizeof(char) * size);
 			if (buffer == NULL)
 			{
 				fprintf(stderr, "[main] NULL returned by malloc. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+				return ERR;
 			}
 			lseek(fd, 0, SEEK_SET);
-			if (better_read(fd, buffer, size, __FILE__, __LINE__) != 0)
+			if (better_read(fd, buffer, size, __FILE__, __LINE__) != 1)
 			{
 				fprintf(stderr, "[main] better_read returned error. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+				return ERR;
 			}
 			Token * t = tokenize(buffer, size);
 			free(buffer);
 			close(fd);
 
 			// build tree from codebook
-			fd = open(codebook_path, O_RDONLY, 00444);
+			fd = open(codebook_path, O_RDONLY, 00600);
 			if (fd == -1)
 			{
-				fprintf(stderr, "Error opening file %s. FILE: %s. LINE %d.\n", codebook_path, __FILE__, __LINE__);
+				fprintf(stderr, "[main] Error opening file %s. FILE: %s. LINE %d.\n", codebook_path, __FILE__, __LINE__);
+				return ERR;
 			}
 
-			leaf * codebook = read_Codebook(fd, 1);
+			char esc;
+			leaf * codebook = read_Codebook(fd, &esc, TRUE);
+			if (codebook == NULL)
+			{
+				fprintf(stderr, "[main] Error in read_Codebook. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+				return ERR;
+			}
 			close(fd);
 
 			// finally, create a new file with the same name and hcz extension and compress it.
 			char * file_name = strcat(file_path, ".hcz");
-    		fd = open(file_name, O_WRONLY | O_CREAT, 00666);
+    			fd = open(file_name, O_WRONLY | O_CREAT, 00600);
 
-			compress_file(fd, t->tokens, t->num_tokens, codebook);
+			if (compress_file(fd, t->tokens, t->num_tokens, codebook, esc) == 1)
+			{
+				fprintf(stderr, "[main] compress_file returned error. FILE: %s. LINE: %d\n", __FILE__, __LINE__);
+				return ERR;
+			}
 
 			// free allocated memory for codebook and tokens
 			int k;
@@ -247,7 +271,9 @@ int main(int argc, char *argv[])
 			}
 			free(t->tokens);
 			free(t);
-			free_tree(codebook);
+			printf("traverse\n");
+			traverse(codebook);
+			free_full_tree(codebook);
 
 			close(fd);
 		}
@@ -265,10 +291,11 @@ int main(int argc, char *argv[])
 			char * codebook_path = argv[i];
 
 			// start by reading the compressed file
-			int fd = open(file_path, O_RDONLY, 00444);
+			int fd = open(file_path, O_RDONLY, 00600);
 			if (fd == -1)
 			{
 				fprintf(stderr, "Error opening file %s. FILE: %s. LINE %d.\n", file_path, __FILE__, __LINE__);
+				return ERR;
 			}
 			int size = lseek(fd, 0, SEEK_END);
 			printf("%d\n", size);
@@ -276,37 +303,47 @@ int main(int argc, char *argv[])
 			if (buffer == NULL)
 			{
 				fprintf(stderr, "[main] NULL returned by malloc. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+				return ERR;
 			}
 			lseek(fd, 0, SEEK_SET);
-			if (better_read(fd, buffer, size, __FILE__, __LINE__) != 0)
+			if (better_read(fd, buffer, size, __FILE__, __LINE__) != 1)
 			{
 				fprintf(stderr, "[main] better_read returned error. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+				return ERR;
 			}
 			close(fd);
 
 			// read the stored codebook and generate Huffman Tree
-			fd = open(codebook_path, O_RDONLY, 00444);
+			fd = open(codebook_path, O_RDONLY, 00600);
 			if (fd == -1)
 			{
 				fprintf(stderr, "Error opening file %s. FILE: %s. LINE %d.\n", codebook_path, __FILE__, __LINE__);
+				return ERR;
 			}
-			leaf * codebook = read_Codebook(fd, 0);
+			char esc;
+			leaf * codebook = read_Codebook(fd, &esc, FALSE);
 			close(fd);
 
 			// remove the '.hcz' extension from the compressed path
-			int decompressed_path_size = strlen(file_path) - 4*sizeof(char);
-			char * decompressed_path = malloc(decompressed_path_size+1);
-			memcpy(decompressed_path, file_path, decompressed_path_size);
-			decompressed_path[decompressed_path_size] = '\0';
+			int path_size = strlen(file_path) - 4*sizeof(char);
+			char * path = (char *) malloc(sizeof(char) * path_size+1);
+			if (path == NULL)
+			{
+				fprintf(stderr, "[main] NULL returned by malloc. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+				return ERR;
+			}
+			strncpy(path, file_path, path_size);
+			path[path_size] = '\0';
 
 			// create/open file at decompressed path
-    		fd = open(decompressed_path, O_WRONLY | O_CREAT, 00666);
-
+    			fd = open(path, O_WRONLY | O_CREAT, 00600);
+			free(path);
 			// decompress file then write to original location
-			decompress_file(fd, buffer, size, codebook);
+			decompress_file(fd, buffer, size, codebook, esc);
 
 			// free and close resources
-			free_huff(codebook);
+			//traverse(codebook);
+			free_full_tree(codebook);
 			free(buffer);
 			close(fd);
 		}

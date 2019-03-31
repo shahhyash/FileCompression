@@ -22,7 +22,7 @@
 char find_escape_character(char ** tokens, int num_tokens)
 {
         char esc = 33;
-        while (esc < 128)
+        while (esc < 127)
         {
                 int i;
                 for (i = 0; i < num_tokens; i++)
@@ -34,9 +34,11 @@ char find_escape_character(char ** tokens, int num_tokens)
                         }
                 }
                 if (i == num_tokens)
+                {
                         return esc;
+                }
         }
-        return ' ';    // err
+        return ' ';    // default safety key
 }
 
 /*
@@ -161,7 +163,7 @@ leaf * build_Codebook(char ** tokens, int num_tokens)
 
         /* write codebook to file using huffman tree */
         char * file_name = "HuffmanCodebook";
-        int fd = open(file_name, O_WRONLY | O_CREAT, 00666);
+        int fd = open(file_name, O_WRONLY | O_CREAT | O_TRUNC, 00600);
         write_Codebook_Driver(fd, root_Huff, esc);
         close(fd);
 

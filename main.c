@@ -255,7 +255,7 @@ int main(int argc, char *argv[])
 
 			// finally, create a new file with the same name and hcz extension and compress it.
 			char * file_name = strcat(file_path, ".hcz");
-    			fd = open(file_name, O_WRONLY | O_CREAT, 00600);
+    			fd = open(file_name, O_WRONLY | O_CREAT | O_TRUNC, 00600);
 
 			if (compress_file(fd, t->tokens, t->num_tokens, codebook, esc) == 1)
 			{
@@ -336,7 +336,7 @@ int main(int argc, char *argv[])
 			path[path_size] = '\0';
 
 			// create/open file at decompressed path
-    			fd = open(path, O_WRONLY | O_CREAT, 00600);
+    			fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 00600);
 			free(path);
 			// decompress file then write to original location
 			decompress_file(fd, buffer, size, codebook, esc);

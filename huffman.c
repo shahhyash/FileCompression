@@ -201,16 +201,16 @@ int decompress_file(int filedes, char * buffer, int size, leaf * root_huff, char
 
         leaf * ptr = root_huff;
 
-        for(i=0; i<size; i++)
+        for(i = 0; i < size; i++)
         {
                 char move = buffer[i];
-                if(move == '0')
+                if (move == '0')
                         ptr = ptr->left;
 
-                if(move == '1')
+                else if (move == '1')
                         ptr = ptr->right;
 
-                if(ptr->word)
+                if(strlen(ptr->word) > 0)
                 {
                         char * word = ptr->word;
                         if (ptr->word[0] == esc)
@@ -360,8 +360,8 @@ leaf * read_Codebook(int fd, char *esc, int compress)
                 {
                         leaf * cur_leaf = create_leaf(cur_word);
                         cur_leaf->encoding = cur_encoding;
-                        //root = huffman_insert(root, cur_leaf, cur_encoding, 0);
-
+                        root = huffman_insert(root, cur_leaf, cur_encoding, 0);
+                        /*
                         int encoding_size = strlen(cur_encoding);
                         leaf * parent_ptr = root;
                         int j;
@@ -380,7 +380,7 @@ leaf * read_Codebook(int fd, char *esc, int compress)
                                 {
                                         if(parent_ptr->right == NULL)
                                         {
-                                                parent_ptr->right = create_leaf(blank);
+                                                parent_ptr->right = create_leaf(NULL);
                                         }
                                         parent_ptr = parent_ptr->right;
                                 }
@@ -396,7 +396,8 @@ leaf * read_Codebook(int fd, char *esc, int compress)
                         if(move == '1') {
                                 parent_ptr->right = cur_leaf;
                         }
-                        
+                        */
+
                 }
                 i++;
                 start = i;
@@ -412,27 +413,27 @@ leaf * huffman_insert(leaf * root, leaf * new, char * encoding, int level)
         {
                 root = create_leaf(NULL);
                 root->word = (char *) malloc(sizeof(char));
-                root->word = "";
+                root->word[0] = '\0';
                 root->encoding = (char *) malloc(sizeof(char) * (level+2));
                 strncpy(root->encoding, encoding, level+1);
                 root->encoding[level] = '\0';
         }
-        if (strlen(encoding) == 1)
+        if (strlen(encoding) == level + 1)
         {
-                if (*encoding == '0')
+                if (encoding[level] == '0')
                 {
                         root->left = new;
                 }
-                else if (*encoding == '1')
+                else if (encoding[level] == '1')
                 {
                         root->right = new;
                 }
         }
-        else if (*encoding == '0')
+        else if (encoding[level] == '0')
         {
                 root->left = huffman_insert(root->left, new, encoding, level+1);
         }
-        else if (*encoding == '1')
+        else if (encoding[level] == '1')
         {
                 root->right = huffman_insert(root->right, new, encoding, level+1);
         }

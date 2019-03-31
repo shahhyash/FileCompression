@@ -132,7 +132,9 @@ void free_full_tree(leaf * root)
 {
         if (root != NULL)
         {
-                printf("freed %s %s\n", root->encoding, root->word);
+                //printf("freeing: ");
+                //printf("%s", root->encoding);
+                //printf(" %s\n", root->word);
                 free_full_tree(root->left);
                 free_full_tree(root->right);
                 free(root->encoding);
@@ -172,7 +174,7 @@ int output(leaf * root, leaf ** arr, int i)
                 fprintf(stderr, "[output] null root passed for index %d. FILE: %s. LINE: %d.\n", i, __FILE__, __LINE__);
                 return i;
         }
-        printf("root %d data: %s\n", i, root->word);
+        //printf("root %d data: %s\n", i, root->word);
 
         arr[i++] = root;
         if (root->right != NULL)

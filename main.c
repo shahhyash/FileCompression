@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
 				return ERR;
 			}
 			int size = lseek(fd, 0, SEEK_END);
-			printf("%d\n", size);
+			//printf("%d\n", size);
 			char * buffer = (char *) malloc(sizeof(char) * size);
 			if (buffer == NULL)
 			{
@@ -271,8 +271,8 @@ int main(int argc, char *argv[])
 			}
 			free(t->tokens);
 			free(t);
-			printf("traverse\n");
-			traverse(codebook);
+			//printf("traverse\n");
+			//traverse(codebook);
 			free_full_tree(codebook);
 
 			close(fd);
@@ -298,7 +298,7 @@ int main(int argc, char *argv[])
 				return ERR;
 			}
 			int size = lseek(fd, 0, SEEK_END);
-			printf("%d\n", size);
+			//printf("%d\n", size);
 			char * buffer = (char *) malloc(sizeof(char) * size);
 			if (buffer == NULL)
 			{

@@ -59,19 +59,23 @@ leaf * insert(leaf * root, char * word, char * file, int line)
         int balance = get_balance(root);
         if (balance > 1 && compare == 1)
         {
+                //printf("Rotate left then right: %s %s\n", root->word, word);
                 root->left = rotate_left(root->left);
                 return rotate_right(root);
         }
         else if (balance > 1 && compare == -1)
         {
+                //printf("Rotate right: %s %s\n", root->word, word);
                 return rotate_right(root);
         }
         else if (balance < -1 && compare == 1)
         {
+                //printf("Rotate left: %s %s\n", root->word, word);
                 return rotate_left(root);
         }
         else if (balance < -1 && compare == -1)
         {
+                //printf("Rotate right then left: %s %s\n", root->word, word);
                 root->right = rotate_right(root->right);
                 return rotate_left(root);
         }
@@ -197,7 +201,12 @@ void print2D(leaf * root, int space)
         {
                 printf(" ");
         }
-        printf("word: %s\tencoding: %s\tfreq: %d", root->word, root->encoding, root->freq);
+        char *a = "";
+        if (root->word != NULL && 0)
+        {
+                a = root->encoding;
+        }
+        printf("word: %s\tencoding: %s\tfreq: %d", root->word, a, root->freq);
         print2D(root->left, space);
 }
 

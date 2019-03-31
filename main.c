@@ -103,8 +103,10 @@ int main(int argc, char *argv[])
 				num_flags++;
 			}
 			else
-				fprintf(stderr, "Incorrect flags. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
-
+			{
+				fprintf(stderr, "[main] Error: Incorrect flags. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+				return ERR;
+			}
 		}
 		else if (!strcmp(argv[i], "-c"))
 		{
@@ -114,8 +116,10 @@ int main(int argc, char *argv[])
 				num_flags++;
 			}
 			else
-				fprintf(stderr, "Incorrect flags. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
-
+			{
+				fprintf(stderr, "[main] Error: Incorrect flags. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+				return ERR;
+			}
 		}
 		else if (!strcmp(argv[i], "-d"))
 		{
@@ -125,7 +129,10 @@ int main(int argc, char *argv[])
 				num_flags++;
 			}
 			else
-				fprintf(stderr, "Incorrect flags. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+			{
+				fprintf(stderr, "[main] Error: Incorrect flags. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+				return ERR;
+			}
 
 		}
 		else if (!strcmp(argv[i], "-R"))
@@ -156,7 +163,7 @@ int main(int argc, char *argv[])
 			int fd = open(file, O_RDONLY, 00600);
 			if (fd == -1)
 			{
-				fprintf(stderr, "Error opening file %s. FILE: %s. LINE %d.\n", file, __FILE__, __LINE__);
+				fprintf(stderr, "[main] Error opening file %s. FILE: %s. LINE %d.\n", file, __FILE__, __LINE__);
 				return ERR;
 			}
 			int size = lseek(fd, 0, SEEK_END);
@@ -164,13 +171,13 @@ int main(int argc, char *argv[])
 			char * buffer = (char *) malloc(sizeof(char) * size);
 			if (buffer == NULL)
 			{
-				fprintf(stderr, "[main] NULL returned by malloc. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+				fprintf(stderr, "[main] [main] NULL returned by malloc. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
 				return ERR;
 			}
 			lseek(fd, 0, SEEK_SET);
 			if (better_read(fd, buffer, size, __FILE__, __LINE__) != 1)
 			{
-				fprintf(stderr, "[main] better_read returned error. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+				fprintf(stderr, "[main] [main] better_read returned error. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
 				return ERR;
 			}
 			Token * t = tokenize(buffer, size);
@@ -181,9 +188,8 @@ int main(int argc, char *argv[])
 				if(DEBUG) printf("Token #%d: %s\n", k, t->tokens[k]);
 			}
 
-			// TODO: no need to return the AVL tree.
-			leaf * root_AVL = build_Codebook(t->tokens, t->num_tokens);
-			if (root_AVL == NULL)
+			int ret = build_Codebook(t->tokens, t->num_tokens);
+			if (ret == 1)
 			{
 				fprintf(stderr, "[main] build_Codebook returned NULL. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
 				return ERR;
@@ -193,7 +199,6 @@ int main(int argc, char *argv[])
 			{
 				free(t->tokens[k]);
 			}
-			free_tree(root_AVL);
 			free(t->tokens);
 			free(t);
 		}
@@ -215,7 +220,7 @@ int main(int argc, char *argv[])
 			int fd = open(file_path, O_RDONLY, 00600);
 			if (fd == -1)
 			{
-				fprintf(stderr, "Error opening file %s. FILE: %s. LINE %d.\n", file_path, __FILE__, __LINE__);
+				fprintf(stderr, "[main] Error opening file %s. FILE: %s. LINE %d.\n", file_path, __FILE__, __LINE__);
 				return ERR;
 			}
 			int size = lseek(fd, 0, SEEK_END);
@@ -294,7 +299,7 @@ int main(int argc, char *argv[])
 			int fd = open(file_path, O_RDONLY, 00600);
 			if (fd == -1)
 			{
-				fprintf(stderr, "Error opening file %s. FILE: %s. LINE %d.\n", file_path, __FILE__, __LINE__);
+				fprintf(stderr, "[main] Error opening file %s. FILE: %s. LINE %d.\n", file_path, __FILE__, __LINE__);
 				return ERR;
 			}
 			int size = lseek(fd, 0, SEEK_END);
@@ -317,7 +322,7 @@ int main(int argc, char *argv[])
 			fd = open(codebook_path, O_RDONLY, 00600);
 			if (fd == -1)
 			{
-				fprintf(stderr, "Error opening file %s. FILE: %s. LINE %d.\n", codebook_path, __FILE__, __LINE__);
+				fprintf(stderr, "[main] Error opening file %s. FILE: %s. LINE %d.\n", codebook_path, __FILE__, __LINE__);
 				return ERR;
 			}
 			char esc;

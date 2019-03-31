@@ -21,6 +21,7 @@
  */
 char find_escape_character(char ** tokens, int num_tokens)
 {
+        /*
         char esc = 33;
         while (esc < 127)
         {
@@ -39,6 +40,8 @@ char find_escape_character(char ** tokens, int num_tokens)
                 }
         }
         return ' ';    // default safety key
+        */
+        return '!';
 }
 
 /*
@@ -84,17 +87,54 @@ char sanitize_tokens(char ** tokens, int num_tokens, char input_esc)
         int i;
         for (i = 0; i < num_tokens; i++)
         {
-                if (isspace(tokens[i][0]))
+                if (tokens[i][0] < 33 || isspace(tokens[i][0]))
                 {
                         tokens[i] = sanitize_token(tokens[i], esc);
+                }
+                else if (tokens[i][0] == '!')
+                {
+                        char * new = (char *) malloc(sizeof(char)*(4+strlen(tokens[i])));
+                        if (new == NULL)
+                        {
+                                fprintf(stderr, "[decompress_file] malloc returned NULL. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+                                //return '\0';
+                        }
+                        strncpy(new, "!033", 4);
+                        strncpy(&new[4], &tokens[i][1], strlen(&tokens[i][1]) );
+                        new[3+strlen(tokens[i])] = '\0';
+                        free(tokens[i]);
+                        tokens[i] = new;
+                        //printf("%s\n", new);
                 }
         }
         return esc;
 }
 
-leaf * build_Codebook(char ** tokens, int num_tokens)
+int build_Codebook(char ** tokens, int num_tokens)
 {
         char esc = sanitize_tokens(tokens, num_tokens, '\0');
+        if (num_tokens == 1)
+        {
+                char * file_name = "HuffmanCodebook";
+                int fd = open(file_name, O_WRONLY | O_CREAT | O_TRUNC, 00600);
+                char * buffer = (char *) malloc(sizeof(char)*(6+strlen(tokens[0])));
+                if (buffer == NULL)
+                {
+                        fprintf(stderr, "[build_Codebook] malloc returned NULL. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+                        return 1;
+                }
+                strncpy(buffer, "!\n0\t", 4);
+                strncpy(&buffer[4], tokens[0], strlen(tokens[0]));
+                strncpy(&buffer[4+strlen(tokens[0])], "\n", 1);
+                buffer[5+strlen(tokens[0])] = '\0';
+                int ret = better_write(fd, buffer, strlen(buffer), __FILE__, __LINE__);
+                if (ret <= 0)
+                {
+                        fprintf(stderr, "[build_Codebook] Error returned by better_write. FILE: %s. LINE: %d\n", __FILE__, __LINE__);
+                }
+                close(fd);
+                return 0;
+        }
         leaf * root_AVL = NULL;
 
         /* Count frequencies */
@@ -106,10 +146,10 @@ leaf * build_Codebook(char ** tokens, int num_tokens)
                 if (root_AVL == NULL)
                 {
                         fprintf(stderr, "[build_Codebook] NULL returned from insert. FILE: %s. LINE: %d\n", __FILE__, __LINE__);
-                        return NULL;
+                        return 1;
                 }
         }
-
+        //traverse(root_AVL);
         /* Sort frequencies */
         int size = get_tree_size(root_AVL);
         if (DEBUG) printf("Tree size: %d\n", size);
@@ -117,7 +157,7 @@ leaf * build_Codebook(char ** tokens, int num_tokens)
         if (arr == NULL)
         {
                 fprintf(stderr, "[build_Codebook] NULL returned from output_driver. FILE: %s. LINE: %d\n", __FILE__, __LINE__);
-                return NULL;
+                return 1;
         }
         for (i = 0; i < size; i++)
         {
@@ -139,14 +179,14 @@ leaf * build_Codebook(char ** tokens, int num_tokens)
                 if (new == NULL)
                 {
                         fprintf(stderr, "[build_Codebook] NULL returned by malloc. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
-                        return NULL;
+                        return 1;
                 }
                 new->left = a;
                 new->right = b;
                 if (new == NULL)
                 {
                         fprintf(stderr, "[build_Codebook] NULL returned by malloc. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
-                        return NULL;
+                        return 1;
                 }
                 new->word = NULL;
                 new->freq = a->freq + b->freq;
@@ -158,8 +198,9 @@ leaf * build_Codebook(char ** tokens, int num_tokens)
         if(encode_keys(root_Huff, ""))
         {
                 fprintf(stderr, "[build_Codebook] encode_keys returned error.\n");
-                return NULL;
+                return 1;
         }
+        //traverse(root_Huff);
 
         /* write codebook to file using huffman tree */
         char * file_name = "HuffmanCodebook";
@@ -170,8 +211,9 @@ leaf * build_Codebook(char ** tokens, int num_tokens)
         free(arr);
         free(h);
         free_huff(root_Huff);
+        free_tree(root_AVL);
 
-        return root_AVL;
+        return 0;
 }
 
 int compress_file(int filedes, char ** tokens, int num_tokens, leaf * root, char esc)
@@ -214,12 +256,28 @@ int decompress_file(int filedes, char * buffer, int size, leaf * root_huff, char
 
                 if(strlen(ptr->word) > 0)
                 {
+                        int malloc_flag = FALSE;
                         char * word = ptr->word;
                         if (ptr->word[0] == esc)
                         {
-                                char out[2];
-                                reverse_sanitize_token(ptr->word, out);
-                                word = out;
+                                if (strncmp(ptr->word, "!033", 4) == 0)
+                                {
+                                        word = (char *) malloc(sizeof(char)*(strlen(ptr->word)+1-3));
+                                        if (word == NULL)
+                                        {
+                                                fprintf(stderr, "[decompress_file] malloc returned NULL. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+                                                return 1;
+                                        }
+                                        word[0] = '!';
+                                        strcpy(&word[1], &ptr->word[4]);
+                                        malloc_flag = TRUE;
+                                }
+                                else
+                                {
+                                        char out[2];
+                                        reverse_sanitize_token(ptr->word, out);
+                                        word = out;
+                                }
                         }
                         int ret = better_write(filedes, word, strlen(word), __FILE__, __LINE__);
                         if (ret <= 0)
@@ -227,6 +285,8 @@ int decompress_file(int filedes, char * buffer, int size, leaf * root_huff, char
                                 fprintf(stderr, "[decompress_file] Error returned by better_write. FILE: %s, LINE: %d\n", __FILE__, __LINE__);
                         }
                         ptr = root_huff;
+                        if (malloc_flag)
+                                free(word);
                 }
         }
         return 0;

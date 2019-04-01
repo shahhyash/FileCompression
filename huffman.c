@@ -16,35 +16,6 @@
 #define FALSE 0
 
 /*
- *      Finds a valid escape character that is unused in the first letter of tokens.
- *      Returns the escape character or ' ' if none found
- */
-char find_escape_character(char ** tokens, int num_tokens)
-{
-        /*
-        char esc = 33;
-        while (esc < 127)
-        {
-                int i;
-                for (i = 0; i < num_tokens; i++)
-                {
-                        if (tokens[i][0] == esc)
-                        {
-                                esc++;
-                                break;
-                        }
-                }
-                if (i == num_tokens)
-                {
-                        return esc;
-                }
-        }
-        return ' ';    // default safety key
-        */
-        return '!';
-}
-
-/*
  *      Takes a whitespace token and sanitizes it according to the escape character.
  *      Returns the sanitized token.
  */
@@ -81,13 +52,13 @@ char sanitize_tokens(char ** tokens, int num_tokens, char input_esc)
 {
         char esc;
         if (input_esc == '\0')
-                esc = find_escape_character(tokens, num_tokens);
+                esc = '!';
         else
                 esc = input_esc;
         int i;
         for (i = 0; i < num_tokens; i++)
         {
-                if (tokens[i][0] < 33 || isspace(tokens[i][0]))
+                if (tokens[i][0] < 33 || isspace(tokens[i][0]) || iscntrl(tokens[i][0]))
                 {
                         tokens[i] = sanitize_token(tokens[i], esc);
                 }
@@ -110,6 +81,10 @@ char sanitize_tokens(char ** tokens, int num_tokens, char input_esc)
         return esc;
 }
 
+/*
+ *      Builds HuffmanCodebook and writes it to a file based on the array of strings in
+ *      token inputted of quantity num_tokens. Returns 0 on success, 1 otherwise.
+ */
 int build_Codebook(char ** tokens, int num_tokens)
 {
         char esc = sanitize_tokens(tokens, num_tokens, '\0');
@@ -154,6 +129,7 @@ int build_Codebook(char ** tokens, int num_tokens)
         }
         //traverse(root_AVL);
         /* Sort frequencies */
+
         int size = get_tree_size(root_AVL);
         if (DEBUG) printf("Tree size: %d\n", size);
         leaf ** arr = output_driver(root_AVL);
@@ -219,6 +195,12 @@ int build_Codebook(char ** tokens, int num_tokens)
         return 0;
 }
 
+/*
+ *      Writes compressed file with file descriptor filedes. The encoding for each token in tokens
+ *      is looked up in the Huffman tree rooted at root. There are num_tokens tokens and the
+ *      escape character for the codebook is esc.
+ *      Returns 0 on success, 1 otherwise.
+ */
 int compress_file(int filedes, char ** tokens, int num_tokens, leaf * root, char esc)
 {
         sanitize_tokens(tokens, num_tokens, esc);
@@ -242,6 +224,11 @@ int compress_file(int filedes, char ** tokens, int num_tokens, leaf * root, char
         return 0;
 }
 
+/*
+ *      Decompressed file according to word and encodings in looked up in root_huff (root of
+ *      huffman tree) There are num_tokens tokens and the escape character for the codebook is esc.
+ *      Returns 0 on success, 1 otherwise.
+ */
 int decompress_file(int filedes, char * buffer, int size, leaf * root_huff, char esc)
 {
         int i;
@@ -295,6 +282,10 @@ int decompress_file(int filedes, char * buffer, int size, leaf * root_huff, char
         return 0;
 }
 
+/*
+ *      Encodes keys in huffman tree rooted at root. s is the current encoding.
+ *      Returns 0 on success, 1 otherwise.
+ */
 int encode_keys(leaf * root, char * s)
 {
         /* Continue traversing tree */
@@ -346,6 +337,9 @@ int encode_keys(leaf * root, char * s)
         return 0;
 }
 
+/*
+ *      Recursively frees huffman tree rooted and root and no data fields within
+ */
 void free_huff(leaf * root)
 {
 
@@ -472,6 +466,11 @@ leaf * read_Codebook(int fd, char *esc, int compress)
         return root;
 }
 
+/*
+ *      Inserts leaf new into huffman tree rooted at root according the encoding.
+ *      level represents the current encoding up to the current level of the tree.
+ *      Returns root of tree.
+ */
 leaf * huffman_insert(leaf * root, leaf * new, char * encoding, int level)
 {
         if (root == NULL)
@@ -505,34 +504,11 @@ leaf * huffman_insert(leaf * root, leaf * new, char * encoding, int level)
         return root;
 }
 
-// given the codebook tree and an encoded string, this function returns the token stored.
-// returns NULL if encoding was not found
-char * lookup_token(leaf * root, char * encoding)
-{
-        if(root == NULL) return NULL;
-
-        int encoding_size = strlen(encoding);
-        int i;
-        leaf * ptr = root;
-        for(i=0; i<encoding_size; i++)
-        {
-                char move = encoding[i];
-                if(move == '0')
-                {
-                        ptr = ptr->left;
-                }
-                if(move == '1')
-                {
-                        ptr = ptr->right;
-                }
-        }
-
-        if (ptr)
-                return ptr->word;
-
-        return NULL;
-}
-
+/*
+ *      Driver to write HuffmanCodebook at file descriptor fd. Writes escape character into
+ *      file and writes huffman tree rooted at root.
+ *      Returns 0 on success, 1 otherwise.
+ */
 int write_Codebook_Driver(int fd, leaf * root, char esc_char)
 {
         char esc[3] = {esc_char, '\n', '\0'};
@@ -544,6 +520,10 @@ int write_Codebook_Driver(int fd, leaf * root, char esc_char)
         return write_Codebook(fd, root);
 }
 
+/*
+ *      Writes HuffmanCodebook at file descriptor fd. Writes huffman tree rooted at root.
+ *      Returns 0 on success, 1 otherwise.
+ */
 int write_Codebook(int fd, leaf * root)
 {
         if (root->word == NULL)

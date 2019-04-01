@@ -19,6 +19,10 @@ typedef struct _Token {
 	int num_tokens;
 } Token;
 
+/*
+ *	Tokenizes the string array s of length len by whitespace delimiters.
+ *	Returns Token containing the number of tokens and the array of tokens.
+ */
 Token * tokenize(char * s, int len)
 {
 	Token * out = (Token *) malloc(sizeof(Token));
@@ -27,7 +31,7 @@ Token * tokenize(char * s, int len)
 	int i;
 	for (i = 0; i < len; i++)
 	{
-		if (isspace(s[i]))
+		if (isspace(s[i]) || iscntrl(s[i]) || s[i] < 33)
 		{
 			if (found_chars)
 			{
@@ -53,7 +57,7 @@ Token * tokenize(char * s, int len)
 	//printf("NUM TOKENS %d\n", out->num_tokens);
 	for (i = 0; i < len; i++)
 	{
-		if (isspace(s[i]))
+		if (isspace(s[i]) || iscntrl(s[i]) || s[i] < 33)
 		{
 			if (found_chars)
 			{

@@ -9,22 +9,8 @@
 #define get_left(index) (2*(index) + 1)
 
 /*
-void free_heap(heap * h)
-{
-        int i;
-        for (i = 0; i < h->capacity; i++)
-        {
-                if(h->codes[i] != NULL)
-                {
-                        free_code(h->codes[i]);
-                }
-
-        }
-        free(h->codes);
-        free(h);
-}
-*/
-
+ *      Transforms the array of arr_length leaves arr into a heap in O(n)
+ */
 heap * heapify(leaf ** arr, int arr_length)
 {
         heap * h = (heap *) malloc(sizeof(heap));
@@ -39,13 +25,9 @@ heap * heapify(leaf ** arr, int arr_length)
         return h;
 }
 
-leaf * heap_peek(heap * h)
-{
-        if (h->size == 0)
-                return NULL;
-        return h->codes[0];
-}
-
+/*
+ *      Pops minimum item from the heap h and updates heap structure.
+ */
 leaf * heap_pop(heap * h)
 {
         if (h->size == 0)
@@ -59,6 +41,9 @@ leaf * heap_pop(heap * h)
         return out;
 }
 
+/*
+ *      Pushes leaf l onto the heap h and sorts it into heap order
+ */
 void heap_push(leaf * l, heap * h)
 {
         h->codes[h->size++] = l;
@@ -66,6 +51,9 @@ void heap_push(leaf * l, heap * h)
                 sift_up(h->size - 1, h);
 }
 
+/*
+ *      Compares root of heap to lower element recursively and swaps if needed
+ */
 void sift_down(int index, heap * h)
 {
         int root = index;
@@ -92,6 +80,10 @@ void sift_down(int index, heap * h)
         }
 }
 
+/*
+ *      Compares bottom elements of heap recursively to their parents starting at i
+ *      and swaps if necessary
+ */
 void sift_up(int i, heap * h)
 {
         while (h->codes[get_parent(i)]->freq > h->codes[i]->freq)
@@ -101,6 +93,9 @@ void sift_up(int i, heap * h)
         }
 }
 
+/*
+ *      Swaps indices a and b in the array stored in the heap h.
+ */
 void swap(int a, int b, heap * h)
 {
         leaf * temp = h->codes[a];

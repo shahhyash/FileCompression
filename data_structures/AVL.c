@@ -6,6 +6,9 @@
 
 #define max(a, b) ((a) > (b) ? (a) : (b))
 
+/*
+ *      Returns integer balance of leaf a
+ */
 int get_balance(leaf * a)
 {
         int bal = get_tree_height(a->left) - get_tree_height(a->right);
@@ -13,6 +16,9 @@ int get_balance(leaf * a)
         return bal;
 }
 
+/*
+ *      Returns integer value of longest branch length rooted at leaf a
+ */
 int get_tree_height(leaf * a)
 {
         if (a == NULL)
@@ -22,6 +28,9 @@ int get_tree_height(leaf * a)
         return height;
 }
 
+/*
+ *      Dynamically allocates space for a new leaf with data word. Returns new leaf.
+ */
 leaf * create_leaf(char * word)
 {
         leaf * new = (leaf *) malloc(sizeof(leaf));
@@ -37,6 +46,10 @@ leaf * create_leaf(char * word)
         return new;
 }
 
+/*
+ *      inserts new leaf with data word into the tree rooted at root.
+ *      Returns root of tree
+ */
 leaf * insert(leaf * root, char * word)
 {
         if (strlen(word) <= 0)
@@ -89,6 +102,9 @@ leaf * insert(leaf * root, char * word)
         return root;
 }
 
+/*
+ *      Returns pointer to leaf containing word data by searching tree starting at leaf root
+ */
 leaf * lookup(leaf * root, char * data)
 {
         if (root == NULL)
@@ -111,6 +127,9 @@ leaf * lookup(leaf * root, char * data)
         return NULL;
 }
 
+/*
+ *      AVL right rotation based at leaf a. Returns pointer to leaf closest to the base of the tree1
+ */
 leaf * rotate_right(leaf * a)
 {
         leaf * root = a->left;
@@ -121,6 +140,9 @@ leaf * rotate_right(leaf * a)
 
 }
 
+/*
+ *      AVL left rotation based at leaf a. Returns pointer to leaf closest to the base of the tree1
+ */
 leaf * rotate_left(leaf * a)
 {
         leaf * root = a->right;
@@ -130,6 +152,9 @@ leaf * rotate_left(leaf * a)
         return root;
 }
 
+/*
+ *      Recursively frees tree based at root inlcuding encoding field
+ */
 void free_tree(leaf * root)
 {
         if (root != NULL)
@@ -141,17 +166,9 @@ void free_tree(leaf * root)
         }
 }
 
-void free_word_tree(leaf * root)
-{
-        if (root != NULL)
-        {
-                //free(root->word);
-                free_word_tree(root->left);
-                free_word_tree(root->right);
-                free(root);
-        }
-}
-
+/*
+ *      Recursively frees all field in leaf tree based at root
+ */
 void free_full_tree(leaf * root)
 {
         if (root != NULL)
@@ -167,6 +184,9 @@ void free_full_tree(leaf * root)
         }
 }
 
+/*
+ *      Returns number of leaves in tree based at root
+ */
 int get_tree_size(leaf * root)
 {
         if (root == NULL)
@@ -174,6 +194,9 @@ int get_tree_size(leaf * root)
         return 1 + get_tree_size(root->right) + get_tree_size(root->left);
 }
 
+/*
+ *      Driver for mapping a tree rooted at root to an array of leaves
+ */
 leaf ** output_driver(leaf * root)
 {
         int size = get_tree_size(root);
@@ -187,10 +210,15 @@ leaf ** output_driver(leaf * root)
         if (i != size)
         {
                 fprintf(stderr, "[output_driver] error %d %d\n", i, size);
+                return NULL;
         }
         return arr;
 }
 
+/*
+ *      Recursively maps the tree rooted at leaf root to the array arr of leaves
+ *      i represents the current index of the array to store the leaf at
+ */
 int output(leaf * root, leaf ** arr, int i)
 {
         if (root == NULL)
@@ -208,6 +236,10 @@ int output(leaf * root, leaf ** arr, int i)
         return i;
 }
 
+/*
+ *      Recursively prints tree rooted at root horizontally with the current
+ *      value printed with space spaces
+ */
 void print2D(leaf * root, int space)
 {
         if (root==NULL) return;
@@ -233,6 +265,9 @@ void print2D(leaf * root, int space)
         print2D(root->left, space);
 }
 
+/*
+ *      Driver to print tree rooted at root
+ */
 void traverse(leaf * root)
 {
         print2D(root, 0);

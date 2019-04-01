@@ -277,10 +277,10 @@ int decompress_file(int filedes, char * buffer, int size, leaf * root_huff, char
                                 }
                                 else
                                 {
-                                        /* TODO: Something to do with reverse santize and read permissions */
-                                        char out[2];
+                                        char * out = (char *) malloc(sizeof(char) * 2);
                                         reverse_sanitize_token(ptr->word, out);
                                         word = out;
+                                        malloc_flag = TRUE;
                                 }
                         }
                         int ret = better_write(filedes, word, strlen(word), __FILE__, __LINE__);

@@ -347,12 +347,12 @@ int decompress_file_Driver(char * file_path, leaf * codebook, char esc)
 
 	/* create/open file at decompressed path */
 	fd = open(decompressed_path, O_WRONLY | O_CREAT | O_TRUNC, 00600);
-	free(decompressed_path);
 
 	/* decompress file then write to original location */
 	decompress_file(fd, buffer, size, codebook, esc);
 
 	/* free and close resources */
+	free(decompressed_path);
 	free(buffer);
 	close(fd);
 

@@ -89,6 +89,46 @@ Token * tokenize(char * s, int len)
 	return out;
 }
 
+leaf * build_AVL_Driver(char * file, leaf * root)
+{
+	int fd = open(file, O_RDONLY, 00600);
+	if (fd == -1)
+	{
+		fprintf(stderr, "[main] Error opening file %s. FILE: %s. LINE %d.\n", file, __FILE__, __LINE__);
+		return NULL;
+	}
+	int size = lseek(fd, 0, SEEK_END);
+	//printf("%d\n", size);
+	char * buffer = (char *) malloc(sizeof(char) * size);
+	if (buffer == NULL)
+	{
+		fprintf(stderr, "[main] [main] NULL returned by malloc. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+		return NULL;
+	}
+	lseek(fd, 0, SEEK_SET);
+	if (better_read(fd, buffer, size, __FILE__, __LINE__) != 1)
+	{
+		fprintf(stderr, "[main] [main] better_read returned error. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+		return NULL;
+	}
+	Token * t = tokenize(buffer, size);
+	free(buffer);
+	int k;
+	for(k = 0; k < t->num_tokens; k++)
+	{
+		if(DEBUG) printf("Token #%d: %s\n", k, t->tokens[k]);
+	}
+
+	for(k = 0; k < t->num_tokens; k++)
+	{
+		free(t->tokens[k]);
+	}
+	free(t->tokens);
+	free(t);
+
+	return build_AVL(t->tokens, t->num_tokens, root);
+}
+
 int main(int argc, char *argv[])
 {
 	int build = FALSE, compress = FALSE, decompress = FALSE, recursive = FALSE;
@@ -177,47 +217,13 @@ int main(int argc, char *argv[])
 		else
 		{
 			char * file = argv[i];
-			int fd = open(file, O_RDONLY, 00600);
-			if (fd == -1)
-			{
-				fprintf(stderr, "[main] Error opening file %s. FILE: %s. LINE %d.\n", file, __FILE__, __LINE__);
-				return ERR;
-			}
-			int size = lseek(fd, 0, SEEK_END);
-			//printf("%d\n", size);
-			char * buffer = (char *) malloc(sizeof(char) * size);
-			if (buffer == NULL)
-			{
-				fprintf(stderr, "[main] [main] NULL returned by malloc. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
-				return ERR;
-			}
-			lseek(fd, 0, SEEK_SET);
-			if (better_read(fd, buffer, size, __FILE__, __LINE__) != 1)
-			{
-				fprintf(stderr, "[main] [main] better_read returned error. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
-				return ERR;
-			}
-			Token * t = tokenize(buffer, size);
-			free(buffer);
-			int k;
-			for(k = 0; k < t->num_tokens; k++)
-			{
-				if(DEBUG) printf("Token #%d: %s\n", k, t->tokens[k]);
-			}
-
-			int ret = build_Codebook(t->tokens, t->num_tokens);
+			leaf * root_AVL = build_AVL_Driver(file, NULL);
+			int ret = build_Codebook(root_AVL);
 			if (ret == 1)
 			{
 				fprintf(stderr, "[main] build_Codebook returned NULL. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
 				return ERR;
-			}
-
-			for(k = 0; k < t->num_tokens; k++)
-			{
-				free(t->tokens[k]);
-			}
-			free(t->tokens);
-			free(t);
+			}			
 		}
 	}
 	else if (compress)

@@ -132,17 +132,18 @@ leaf * build_AVL_Driver(char * file, leaf * root)
 
 typedef struct _FileNode {
 	char * file_path;
-	void * next;
+	struct _FileNode * next;
 } FileNode;
 
 /* Insert new FileNode into the list for a new file */
 FileNode * insert_fileNode(FileNode * root, char * file_path)
 {
 	FileNode * file_node = (FileNode*)malloc(sizeof(FileNode));
-	file_node->file_path=file_path;
+	file_node->file_path= (char *) malloc(sizeof(char) * (1+strlen(file_path)));
+	strcpy(file_node->file_path, file_path);
 	file_node->next=NULL;
 
-	if (root)
+	if (root != NULL)
 	{
 		FileNode * ptr = root;
 		while(ptr->next)
@@ -157,7 +158,7 @@ FileNode * insert_fileNode(FileNode * root, char * file_path)
 /* Free all allocated memory for linked list */
 int free_FileNodeList(FileNode * root)
 {
-	while (root)
+	while (root != NULL)
 	{
 		free(root->file_path);
 		FileNode * next = root->next;
@@ -175,7 +176,7 @@ int free_FileNodeList(FileNode * root)
  * In build & compress mode (0), the function appends all child files to the linked list
  * In decompress mode (1), the function only appends files with a '.hcz' extension to the linked list.
  */
-int fetch_files_recursively(char * dirpath, FileNode * root, int mode)
+FileNode * fetch_files_recursively(char * dirpath, FileNode * root, int mode)
 {
 	/* open directory and skip over the first two relative paths */
 	DIR * dirdes = opendir(dirpath);
@@ -220,23 +221,31 @@ int fetch_files_recursively(char * dirpath, FileNode * root, int mode)
 		if (item->d_type == DT_DIR)
 		{
 			fetch_files_recursively(child_dirpath, root, mode);
-			free(child_dirpath);
+
 		}
 
 		/* if item is a regular file, append it to the linked list as a file */
-		if (item->d_type == DT_REG)
+		else if (item->d_type == DT_REG)
 		{
 			int is_compressed_file = (strcmp(&(item->d_name[strlen(item->d_name)-4]), ".hcz") == 0);
 			if ((mode==0 && !is_compressed_file) || (mode==1 && is_compressed_file))
 			{
-				printf("mode: %d, file: %s\n", mode, child_dirpath);
+				/* printf("modes: %d, file: %s\n", mode, child_dirpath); */
 				/* root node for parent call of this function should have a null pointer for file path */
-				if(root->file_path)
+				if (root == NULL)
+				{
 					root = insert_fileNode(root, child_dirpath);
+				}
 				else
-					root->file_path = child_dirpath;
+				{
+					if(root->file_path)
+						root = insert_fileNode(root, child_dirpath);
+					else
+						root->file_path = child_dirpath;
+				}
 			}
 		}
+		free(child_dirpath);
 
 		/* fetch next item in directory */
 		item = readdir(dirdes);
@@ -245,7 +254,7 @@ int fetch_files_recursively(char * dirpath, FileNode * root, int mode)
 	/* close directory stream after traversing through all files */
 	closedir(dirdes);
 
-	return 0;
+	return root;
 }
 
 int compress_file_Driver(char * file_path, leaf * codebook, char esc)
@@ -437,8 +446,7 @@ int main(int argc, char *argv[])
 		{
 			/* fetch dirpath and create empty file node to serve as head of linked list */
 			char * path = argv[i];
-			FileNode * root_FileNode = insert_fileNode(NULL, NULL);
-			fetch_files_recursively(path, root_FileNode, 0);
+			FileNode * root_FileNode = fetch_files_recursively(path, NULL, 0);
 
 			/* for each file node, append tokens to AVL tree */
 			FileNode * ptr = root_FileNode;
@@ -503,8 +511,7 @@ int main(int argc, char *argv[])
 		if(recursive)
 		{
 			/* fetch dirpath and create empty file node to serve as head of linked list */
-			FileNode * root_FileNode = insert_fileNode(NULL, NULL);
-			fetch_files_recursively(path, root_FileNode, 0);
+			FileNode * root_FileNode = fetch_files_recursively(path, NULL, 0);
 
 			/* for each file node, compress the file */
 			FileNode * ptr = root_FileNode;
@@ -559,8 +566,7 @@ int main(int argc, char *argv[])
 		if(recursive)
 		{
 			/* fetch dirpath and create empty file node to serve as head of linked list */
-			FileNode * root_FileNode = insert_fileNode(NULL, NULL);
-			fetch_files_recursively(path, root_FileNode, 1);
+			FileNode * root_FileNode = fetch_files_recursively(path, NULL, 1);
 
 			/* for each file node, decompress the file */
 			FileNode * ptr = root_FileNode;

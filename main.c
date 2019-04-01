@@ -183,32 +183,32 @@ int fetch_files_recursively(char * dirpath, FileNode * root, int mode)
 {
 	/* open directory and skip over the first two relative paths */
 	DIR * dirdes = opendir(dirpath);
-	readdir(dirdes);
-	readdir(dirdes);
-
-	/* memory used to store current directory item */
 	struct dirent * item = readdir(dirdes);
+
 
 	/* loop through directory until no further items are left */
 	while (item)
 	{
+		printf("filename: %s\n", item->d_name);
+		if (!strcmp(item->d_name, ".") || !strcmp(item->d_name, ".."))
+			item = readdir(dirdes);
 		/* compute full relative path of child item */
 		int dirpath_len = strlen(dirpath);
 		int name_len = strlen(item->d_name);
 		char * child_dirpath;
 		if (dirpath[dirpath_len-1] == '/')
 		{
-			child_dirpath = (char*)malloc(sizeof(char) * (dirpath_len + name_len + 1));
-			memcpy(child_dirpath, dirpath, dirpath_len);
-			memcpy(&child_dirpath[dirpath_len], item->d_name, name_len);
+			child_dirpath = (char *) malloc(sizeof(char) * (dirpath_len + name_len + 1));
+			strncpy(child_dirpath, dirpath, dirpath_len);
+			strncpy(&child_dirpath[dirpath_len], item->d_name, name_len);
 			child_dirpath[dirpath_len + name_len] = '\0';
 		}
 		else
 		{
-			child_dirpath = (char*)malloc(sizeof(char) * (dirpath_len + name_len + 2));
-			memcpy(child_dirpath, dirpath, dirpath_len);
+			child_dirpath = (char *) malloc(sizeof(char) * (dirpath_len + name_len + 2));
+			strncpy(child_dirpath, dirpath, dirpath_len);
 			child_dirpath[dirpath_len] = '/';
-			memcpy(&child_dirpath[dirpath_len+1], item->d_name, name_len);
+			strncpy(&child_dirpath[dirpath_len+1], item->d_name, name_len);
 			child_dirpath[dirpath_len + name_len + 1] = '\0';
 		}
 
@@ -352,7 +352,6 @@ int main(int argc, char *argv[])
 	int build = FALSE, compress = FALSE, decompress = FALSE, recursive = FALSE;
 	int num_flags = 0;
 	int i;
-	/* Possible issue: repeated flags */
 	for (i = 1; i < argc; i++)
 	{
 		if (!strcmp(argv[i], "-b"))
@@ -433,7 +432,9 @@ int main(int argc, char *argv[])
 			/* fetch dirpath and create empty file node to serve as head of linked list */
 			char * path = argv[i];
 			FileNode * root_FileNode = insert_fileNode(NULL, NULL);
+			printf("starting recursion\n");
 			fetch_files_recursively(path, root_FileNode, 0);
+			printf("finished\n");
 
 			/* for each file node, append tokens to AVL tree */
 			FileNode * ptr = root_FileNode;

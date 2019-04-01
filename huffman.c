@@ -110,33 +110,10 @@ char sanitize_tokens(char ** tokens, int num_tokens, char input_esc)
         return esc;
 }
 
-int build_Codebook(char ** tokens, int num_tokens)
+leaf * build_AVL(char ** tokens, int num_tokens, leaf * root_AVL)
 {
-        char esc = sanitize_tokens(tokens, num_tokens, '\0');
-        if (num_tokens == 1)
-        {
-                char * file_name = "HuffmanCodebook";
-                int fd = open(file_name, O_WRONLY | O_CREAT | O_TRUNC, 00600);
-                char * buffer = (char *) malloc(sizeof(char)*(6+strlen(tokens[0])));
-                if (buffer == NULL)
-                {
-                        fprintf(stderr, "[build_Codebook] malloc returned NULL. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
-                        return 1;
-                }
-                strncpy(buffer, "!\n0\t", 4);
-                strncpy(&buffer[4], tokens[0], strlen(tokens[0]));
-                strncpy(&buffer[4+strlen(tokens[0])], "\n", 1);
-                buffer[5+strlen(tokens[0])] = '\0';
-                int ret = better_write(fd, buffer, strlen(buffer), __FILE__, __LINE__);
-                if (ret <= 0)
-                {
-                        fprintf(stderr, "[build_Codebook] Error returned by better_write. FILE: %s. LINE: %d\n", __FILE__, __LINE__);
-                }
-                close(fd);
-                return 0;
-        }
-        leaf * root_AVL = NULL;
-
+        sanitize_tokens(tokens, num_tokens, '\0');
+        
         /* Count frequencies */
         int i;
         for (i = 0; i < num_tokens; i++)
@@ -145,13 +122,48 @@ int build_Codebook(char ** tokens, int num_tokens)
                 root_AVL = insert(root_AVL, tokens[i], __FILE__, __LINE__);
                 if (root_AVL == NULL)
                 {
-                        fprintf(stderr, "[build_Codebook] NULL returned from insert. FILE: %s. LINE: %d\n", __FILE__, __LINE__);
-                        return 1;
+                        fprintf(stderr, "[build_AVL] NULL returned from insert. FILE: %s. LINE: %d\n", __FILE__, __LINE__);
+                        return NULL;
                 }
         }
+
+        return root_AVL;
+}
+
+int build_Codebook(leaf * root_AVL)
+{
+        if(!root_AVL)
+        {
+                fprintf(stderr, "[build_Codebook] received a NULL input as the AVL tree. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+        }
+
+        /* If both left and right of the AVL tree is NULL, then assume there's only one token to write */
+        if (!(root_AVL->left || root_AVL->right))
+        {
+                char * file_name = "HuffmanCodebook";
+                int fd = open(file_name, O_WRONLY | O_CREAT | O_TRUNC, 00600);
+                char * buffer = (char *) malloc(sizeof(char)*(6+strlen(root_AVL->word)));
+                if (buffer == NULL)
+                {
+                        fprintf(stderr, "[build_Codebook] malloc returned NULL. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+                        return 1;
+                }
+                strncpy(buffer, "!\n0\t", 4);
+                strncpy(&buffer[4], root_AVL->word, strlen(root_AVL->word));
+                strncpy(&buffer[4+strlen(root_AVL->word)], "\n", 1);
+                buffer[5+strlen(root_AVL->word)] = '\0';
+                int ret = better_write(fd, buffer, strlen(buffer), __FILE__, __LINE__);
+                if (ret <= 0)
+                {
+                        fprintf(stderr, "[build_Codebook] Error returned by better_write. FILE: %s. LINE: %d\n", __FILE__, __LINE__);
+                }
+                close(fd);
+                return 0;
+        }
+        
         //traverse(root_AVL);
         /* Sort frequencies */
-        int size = get_tree_size(root_AVL);
+        int i, size = get_tree_size(root_AVL);
         if (DEBUG) printf("Tree size: %d\n", size);
         leaf ** arr = output_driver(root_AVL);
         if (arr == NULL)
@@ -205,7 +217,9 @@ int build_Codebook(char ** tokens, int num_tokens)
         /* write codebook to file using huffman tree */
         char * file_name = "HuffmanCodebook";
         int fd = open(file_name, O_WRONLY | O_CREAT | O_TRUNC, 00600);
-        write_Codebook_Driver(fd, root_Huff, esc);
+
+        /* assuming that ! is the only esc character */
+        write_Codebook_Driver(fd, root_Huff, '!');
         close(fd);
 
         free(arr);

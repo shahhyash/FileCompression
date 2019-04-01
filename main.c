@@ -9,6 +9,8 @@
 #include <unistd.h>
 #include <ctype.h>
 
+#include <sys/stat.h>
+
 #define TRUE 1
 #define FALSE 0
 #define ERR 1
@@ -137,8 +139,23 @@ int main(int argc, char *argv[])
 		}
 		else if (!strcmp(argv[i], "-R"))
 		{
-			recursive = TRUE;
-			num_flags++;
+			if (argc < 4)
+			{
+				fprintf(stderr, "Incorrect flags. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+				return ERR;
+			}
+
+			/* third argument should be file path regardless of operation */
+			char * path = argv[3];		
+			struct stat path_stat;
+			stat(path, &path_stat);
+
+			/* only mark process as recursive if specified path is a directory */
+			if (S_ISDIR(path_stat.st_mode))
+			{
+				recursive = TRUE;
+				num_flags++;
+			}
 		}
 		/* flags done */
 		else

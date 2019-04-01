@@ -20,7 +20,8 @@ char sanitize_tokens(char ** tokens, int num_tokens, char input_esc);
  *      Builds HuffmanCodebook and writes it to a file based on the array of strings in
  *      token inputted of quantity num_tokens. Returns 0 on success, 1 otherwise.
  */
-int build_Codebook(char ** tokens, int num_tokens);
+int build_Codebook(leaf * root_AVL);
+leaf * build_AVL(char ** tokens, int num_tokens, leaf * root_AVL);
 /*
  *      Writes compressed file with file descriptor filedes. The encoding for each token in tokens
  *      is looked up in the Huffman tree rooted at root. There are num_tokens tokens and the

@@ -20,7 +20,7 @@ def run_command(cmd):
         raise CommmandError(cmd, p.returncode, out)
 
 def r_generate(path, answer_path):
-    num_files = r.randint(1, 1)
+    num_files = r.randint(1, 10)
     for i in range(num_files):
         if r.random() > 0.9 and i > 10:
             run_command(['mkdir', path + "/recursive_test" + str(i)])
@@ -49,8 +49,6 @@ def delete_compressed(path):
             run_command(['rm', '-r', path + "/" + file])
 
 def grade(path, answer_path):
-    print(os.listdir(path))
-    print(os.listdir(answer_path))
     for file, ans in zip(sorted(os.listdir(path)), sorted(os.listdir(answer_path))):
         if os.path.isdir(path + "/" + file):
             grade(path+"/"+file, answer_path+"/"+ans)

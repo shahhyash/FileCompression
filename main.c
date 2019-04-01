@@ -10,6 +10,7 @@
 #include <ctype.h>
 
 #include <sys/stat.h>
+#include <dirent.h>
 
 #define TRUE 1
 #define FALSE 0
@@ -129,6 +130,102 @@ leaf * build_AVL_Driver(char * file, leaf * root)
 	return build_AVL(t->tokens, t->num_tokens, root);
 }
 
+typedef struct _FileNode {
+	char * file_path;
+	void * next;
+} FileNode;
+
+/* Insert new FileNode into the list for a new file */
+FileNode * insert_fileNode(FileNode * root, char * file_path)
+{
+	FileNode * file_node = (FileNode*)malloc(sizeof(FileNode));
+	file_node->file_path=file_path;
+	file_node->next=NULL;
+
+	if (root)
+	{
+		FileNode * ptr = root;
+		while(ptr->next)
+			ptr = ptr->next;
+		ptr->next = file_node;
+		return root;
+	}
+
+	return file_node;
+}
+
+/* Free all allocated memory for linked list */
+int free_FileNodeList(FileNode * root)
+{
+	while (root)
+	{
+		free(root->file_path);
+		FileNode * next = root->next;
+		free(root);
+		root = next;
+	}
+
+	return 0;
+}
+
+/* This function takes in a path to a directory and recursively builds a linked list of child paths */
+int fetch_files_recursively(char * dirpath, FileNode * root)
+{
+	/* open directory and skip over the first two relative paths */
+	DIR * dirdes = opendir(dirpath);
+	readdir(dirdes);
+	readdir(dirdes);
+	
+	/* memory used to store current directory item */
+	struct dirent * item = readdir(dirdes);
+	
+	/* loop through directory until no further items are left */
+	while (item)
+	{
+		/* compute full relative path of child item */
+		int dirpath_len = strlen(dirpath);
+		int name_len = strlen(item->d_name);
+		char * child_dirpath;
+		if (dirpath[dirpath_len-1] == '/')
+		{
+			child_dirpath = (char*)malloc(sizeof(char) * (dirpath_len + name_len + 1));
+			memcpy(child_dirpath, dirpath, dirpath_len);
+			memcpy(&child_dirpath[dirpath_len], item->d_name, name_len);
+			child_dirpath[dirpath_len + name_len] = '\0';
+		}
+		else
+		{
+			child_dirpath = (char*)malloc(sizeof(char) * (dirpath_len + name_len + 2));
+			memcpy(child_dirpath, dirpath, dirpath_len);
+			child_dirpath[dirpath_len] = '/';
+			memcpy(&child_dirpath[dirpath_len+1], item->d_name, name_len);
+			child_dirpath[dirpath_len + name_len + 1] = '\0';
+		}
+
+		/* if item is a directory, recursively search all of it's children */
+		if (item->d_type == DT_DIR)
+			fetch_files_recursively(child_dirpath, root);
+
+		/* if item is a regular file, append it to the linked list as a file */
+		if (item->d_type == DT_REG)
+		{
+			/* root node for parent call of this function should have a null pointer for file path */
+			if(root->file_path)
+				root = insert_fileNode(root, child_dirpath);
+			else
+				root->file_path = child_dirpath;
+		}
+
+		/* fetch next item in directory */
+		item = readdir(dirdes);
+	}
+
+	/* close directory stream after traversing through all files */
+	closedir(dirdes);
+
+	return 0;
+}
+
 int main(int argc, char *argv[])
 {
 	int build = FALSE, compress = FALSE, decompress = FALSE, recursive = FALSE;
@@ -212,7 +309,14 @@ int main(int argc, char *argv[])
 	{
 		if(recursive)
 		{
-			//char * path = argv[i];
+			char * path = argv[i];
+			FileNode * root_FileNode = insert_fileNode(NULL, NULL);
+			fetch_files_recursively(path, root_FileNode);
+
+			
+	
+			free_FileNodeList(root_FileNode);
+
 		}
 		else
 		{

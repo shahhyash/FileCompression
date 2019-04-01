@@ -13,16 +13,16 @@ class CommmandError(Error):
         self.out = out
 
 def run_command(cmd):
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=None)
     (out, err) = p.communicate()
 
     if p.returncode != 0:
         raise CommmandError(cmd, p.returncode, out)
 
 def r_generate(path, answer_path):
-    num_files = r.randint(1, 10)
+    num_files = r.randint(1, 1)
     for i in range(num_files):
-        if r.random() > 0.9 and i > 1:
+        if r.random() > 0.9 and i > 10:
             run_command(['mkdir', path + "/recursive_test" + str(i)])
             run_command(['mkdir', answer_path + "/recursive_test_ans" + str(i)])
             r_generate(path+"/recursive_test" + str(i), answer_path+"/recursive_test_ans" + str(i))
@@ -39,6 +39,14 @@ def r_generate(path, answer_path):
                 i += 1
             f.close()
             f1.close()
+
+def delete_compressed(path):
+    for file in sorted(os.listdir(path)):
+        if os.path.isdir(path + "/" + file):
+            delete_compressed(path+"/"+file)
+            continue
+        if ".hcz" in file:
+            run_command(['rm', '-r', path + "/" + file])
 
 def grade(path, answer_path):
     print(os.listdir(path))
@@ -74,8 +82,9 @@ def recursive():
     # compress
     run_command(['./fileCompressor', '-c', '-R', name, 'HuffmanCodebook'])
     # decompress
-    run_command(['./fileCompressor', '-d', '-R', name + '.hcz', 'HuffmanCodebook'])
+    run_command(['./fileCompressor', '-d', '-R', name, 'HuffmanCodebook'])
     # compare with origin file
+    delete_compressed(dir_path + "/recursive_test")
     grade(dir_path + "/recursive_test", dir_path + "/recursive_test_ans")
 
 

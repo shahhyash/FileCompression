@@ -119,15 +119,13 @@ leaf * build_AVL_Driver(char * file, leaf * root)
 	{
 		if(DEBUG) printf("Token #%d: %s\n", k, t->tokens[k]);
 	}
+	
+	leaf * ret_AVL = build_AVL(t->tokens, t->num_tokens, root);
 
-	for(k = 0; k < t->num_tokens; k++)
-	{
-		free(t->tokens[k]);
-	}
 	free(t->tokens);
 	free(t);
 
-	return build_AVL(t->tokens, t->num_tokens, root);
+	return ret_AVL;
 }
 
 typedef struct _FileNode {
@@ -309,14 +307,30 @@ int main(int argc, char *argv[])
 	{
 		if(recursive)
 		{
+			/* fetch dirpath and create empty file node to serve as head of linked list */
 			char * path = argv[i];
 			FileNode * root_FileNode = insert_fileNode(NULL, NULL);
 			fetch_files_recursively(path, root_FileNode);
 
+			/* for each file node, append tokens to AVL tree */
+			FileNode * ptr = root_FileNode;
+			leaf * root_AVL = NULL;
+			while (ptr)
+			{
+				root_AVL = build_AVL_Driver(ptr->file_path, root_AVL);
+				ptr = ptr->next;
+			}
 			
-	
+			/* free linked list data */
 			free_FileNodeList(root_FileNode);
 
+			/* build codebook using AVL tree */
+			int ret = build_Codebook(root_AVL);
+			if (ret == 1)
+			{
+				fprintf(stderr, "[main] build_Codebook returned NULL. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+				return ERR;
+			}
 		}
 		else
 		{
@@ -327,7 +341,7 @@ int main(int argc, char *argv[])
 			{
 				fprintf(stderr, "[main] build_Codebook returned NULL. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
 				return ERR;
-			}			
+			}
 		}
 	}
 	else if (compress)

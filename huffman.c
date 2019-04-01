@@ -141,13 +141,16 @@ int build_Codebook(char ** tokens, int num_tokens)
         int i;
         for (i = 0; i < num_tokens; i++)
         {
-                if (DEBUG) printf("Inserting %s\n", tokens[i]);
-                root_AVL = insert(root_AVL, tokens[i], __FILE__, __LINE__);
+                //printf("Inserting %s\n", tokens[i]);
+                root_AVL = insert(root_AVL, tokens[i]);
                 if (root_AVL == NULL)
                 {
                         fprintf(stderr, "[build_Codebook] NULL returned from insert. FILE: %s. LINE: %d\n", __FILE__, __LINE__);
                         return 1;
                 }
+                //printf("root traverse: %s\n", tokens[i]);
+                //traverse(root_AVL);
+                //printf("\n");
         }
         //traverse(root_AVL);
         /* Sort frequencies */
@@ -407,7 +410,7 @@ leaf * read_Codebook(int fd, char *esc, int compress)
                 cur_word[i - start] = '\0';
                 if (compress)
                 {
-                        root = insert(root, cur_word, __FILE__, __LINE__);
+                        root = insert(root, cur_word);
                         leaf * cur_leaf = lookup(root, cur_word);
                         if (cur_leaf == NULL)
                         {

@@ -8,14 +8,18 @@
 
 int get_balance(leaf * a)
 {
-        return get_tree_height(a->left) - get_tree_height(a->right);
+        int bal = get_tree_height(a->left) - get_tree_height(a->right);
+        //printf("word: %s BAL %d\n", a->word, bal);
+        return bal;
 }
 
 int get_tree_height(leaf * a)
 {
         if (a == NULL)
                 return 0;
-        return 1 + max(get_tree_height(a->right), get_tree_height(a->left));
+        int height = 1 + max(get_tree_height(a->right), get_tree_height(a->left));
+        //printf("word: %s HEIGHT %d\n", a->word, height-1);
+        return height;
 }
 
 leaf * create_leaf(char * word)
@@ -33,7 +37,7 @@ leaf * create_leaf(char * word)
         return new;
 }
 
-leaf * insert(leaf * root, char * word, char * file, int line)
+leaf * insert(leaf * root, char * word)
 {
         if (strlen(word) <= 0)
                 return root;
@@ -41,6 +45,7 @@ leaf * insert(leaf * root, char * word, char * file, int line)
         {
                 return create_leaf(word);
         }
+        //int layer  = *inserted;
         int compare = strcmp(root->word, word);
         if (compare == 0)
         {
@@ -49,33 +54,35 @@ leaf * insert(leaf * root, char * word, char * file, int line)
         }
         else if (compare < 0)
         {
-                root->left = insert(root->left, word, file, line);
+                root->left = insert(root->left, word);
         }
         else if (compare > 0)
         {
-                root->right = insert(root->right, word, file, line);
+                root->right = insert(root->right, word);
         }
 
         int balance = get_balance(root);
-        if (balance > 1 && compare == 1)
+        if (balance > 1 && strcmp(root->left->word, word) == 1)
         {
                 //printf("Rotate left then right: %s %s\n", root->word, word);
+                //traverse(root);
                 root->left = rotate_left(root->left);
                 return rotate_right(root);
         }
-        else if (balance > 1 && compare == -1)
+        else if (balance > 1 && strcmp(root->left->word, word) == -1)
         {
                 //printf("Rotate right: %s %s\n", root->word, word);
                 return rotate_right(root);
         }
-        else if (balance < -1 && compare == 1)
+        else if (balance < -1 && strcmp(root->right->word, word) == 1)
         {
                 //printf("Rotate left: %s %s\n", root->word, word);
                 return rotate_left(root);
         }
-        else if (balance < -1 && compare == -1)
+        else if (balance < -1 && strcmp(root->right->word, word) == -1)
         {
                 //printf("Rotate right then left: %s %s\n", root->word, word);
+                //traverse(root);
                 root->right = rotate_right(root->right);
                 return rotate_left(root);
         }
@@ -107,8 +114,9 @@ leaf * lookup(leaf * root, char * data)
 leaf * rotate_right(leaf * a)
 {
         leaf * root = a->left;
-        a->left = root->right;
+        leaf * b = root->right;
         root->right = a;
+        a->left = b;
         return root;
 
 }
@@ -116,8 +124,9 @@ leaf * rotate_right(leaf * a)
 leaf * rotate_left(leaf * a)
 {
         leaf * root = a->right;
-        a->right = root->left;
+        leaf * b = root->left;
         root->left = a;
+        a->right = b;
         return root;
 }
 
@@ -128,6 +137,17 @@ void free_tree(leaf * root)
                 free(root->encoding);
                 free_tree(root->left);
                 free_tree(root->right);
+                free(root);
+        }
+}
+
+void free_word_tree(leaf * root)
+{
+        if (root != NULL)
+        {
+                //free(root->word);
+                free_word_tree(root->left);
+                free_word_tree(root->right);
                 free(root);
         }
 }
@@ -201,12 +221,15 @@ void print2D(leaf * root, int space)
         {
                 printf(" ");
         }
+        /*
         char *a = "";
         if (root->word != NULL && 0)
         {
                 a = root->encoding;
         }
-        printf("word: %s\tencoding: %s\tfreq: %d", root->word, a, root->freq);
+        */
+        //printf("word: %s\tencoding: %s\tfreq: %d", root->word, a, root->freq);
+        printf("word: %s", root->word);
         print2D(root->left, space);
 }
 

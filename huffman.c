@@ -274,6 +274,7 @@ int decompress_file(int filedes, char * buffer, int size, leaf * root_huff, char
                                 }
                                 else
                                 {
+                                        /* TODO: Something to do with reverse santize and read permissions */
                                         char out[2];
                                         reverse_sanitize_token(ptr->word, out);
                                         word = out;

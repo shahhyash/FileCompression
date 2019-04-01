@@ -170,8 +170,14 @@ int free_FileNodeList(FileNode * root)
 	return 0;
 }
 
-/* This function takes in a path to a directory and recursively builds a linked list of child paths */
-int fetch_files_recursively(char * dirpath, FileNode * root)
+/* 
+ * This function takes in a path to a directory and recursively builds a linked list of child paths 
+ * 
+ * The mode paramater assumes a value of either 0 or 1, where 0 -> build & compress, 1 -> decompress
+ * In build & compress mode (0), the function appends all child files to the linked list
+ * In decompress mode (1), the function only appends files with a '.hcz' extension to the linked list. 
+ */
+int fetch_files_recursively(char * dirpath, FileNode * root, int mode)
 {
 	/* open directory and skip over the first two relative paths */
 	DIR * dirdes = opendir(dirpath);
@@ -206,16 +212,20 @@ int fetch_files_recursively(char * dirpath, FileNode * root)
 
 		/* if item is a directory, recursively search all of it's children */
 		if (item->d_type == DT_DIR)
-			fetch_files_recursively(child_dirpath, root);
+			fetch_files_recursively(child_dirpath, root, mode);
 
 		/* if item is a regular file, append it to the linked list as a file */
 		if (item->d_type == DT_REG)
 		{
-			/* root node for parent call of this function should have a null pointer for file path */
-			if(root->file_path)
-				root = insert_fileNode(root, child_dirpath);
-			else
-				root->file_path = child_dirpath;
+			if (!mode || strcmp(&(item->d_name[strlen(item->d_name)-4]), ".hcz")==0)
+			{
+				printf("mode: %d, file: %s\n", mode, child_dirpath);
+				/* root node for parent call of this function should have a null pointer for file path */
+				if(root->file_path)
+					root = insert_fileNode(root, child_dirpath);
+				else
+					root->file_path = child_dirpath;
+			}
 		}
 
 		/* fetch next item in directory */
@@ -280,6 +290,56 @@ int compress_file_Driver(char * file_path, leaf * codebook, char esc)
 	free(t->tokens);
 	free(t);
 	
+	close(fd);
+
+	return 0;
+}
+
+int decompress_file_Driver(char * file_path, leaf * codebook, char esc)
+{
+	/* Begin by reading the compressed file */
+	int fd = open(file_path, O_RDONLY, 00600);
+	if (fd == -1)
+	{
+		fprintf(stderr, "[main] Error opening file %s. FILE: %s. LINE %d.\n", file_path, __FILE__, __LINE__);
+		return ERR;
+	}
+	int size = lseek(fd, 0, SEEK_END);
+	//printf("%d\n", size);
+	char * buffer = (char *) malloc(sizeof(char) * size);
+	if (buffer == NULL)
+	{
+		fprintf(stderr, "[main] NULL returned by malloc. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+		return ERR;
+	}
+	lseek(fd, 0, SEEK_SET);
+	if (better_read(fd, buffer, size, __FILE__, __LINE__) != 1)
+	{
+		fprintf(stderr, "[main] better_read returned error. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+		return ERR;
+	}
+	close(fd);
+
+	/* remove the '.hcz' extension from the compressed path */
+	int path_size = strlen(file_path) - 4*sizeof(char);
+	char * decompressed_path = (char *) malloc(sizeof(char) * path_size+1);
+	if (decompressed_path == NULL)
+	{
+		fprintf(stderr, "[main] NULL returned by malloc. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+		return ERR;
+	}
+	strncpy(decompressed_path, file_path, path_size);
+	decompressed_path[path_size] = '\0';
+
+	/* create/open file at decompressed path */
+	fd = open(decompressed_path, O_WRONLY | O_CREAT | O_TRUNC, 00600);
+	free(decompressed_path);
+
+	/* decompress file then write to original location */
+	decompress_file(fd, buffer, size, codebook, esc);
+
+	/* free and close resources */
+	free(buffer);
 	close(fd);
 
 	return 0;
@@ -371,7 +431,7 @@ int main(int argc, char *argv[])
 			/* fetch dirpath and create empty file node to serve as head of linked list */
 			char * path = argv[i];
 			FileNode * root_FileNode = insert_fileNode(NULL, NULL);
-			fetch_files_recursively(path, root_FileNode);
+			fetch_files_recursively(path, root_FileNode, 0);
 
 			/* for each file node, append tokens to AVL tree */
 			FileNode * ptr = root_FileNode;
@@ -432,7 +492,7 @@ int main(int argc, char *argv[])
 		{
 			/* fetch dirpath and create empty file node to serve as head of linked list */
 			FileNode * root_FileNode = insert_fileNode(NULL, NULL);
-			fetch_files_recursively(path, root_FileNode);
+			fetch_files_recursively(path, root_FileNode, 0);
 
 			/* for each file node, compress the file */
 			FileNode * ptr = root_FileNode;
@@ -463,73 +523,59 @@ int main(int argc, char *argv[])
 	}
 	else if (decompress)
 	{
+		/* fetch command arguments for decompress path and codebook path */
+		char * path = argv[i++];
+		char * codebook_path = argv[i];
+		
+		/* build tree from codebook file - only one so can be used across recursive and non-recursive modes */
+		int fd = open(codebook_path, O_RDONLY, 00600);
+		if (fd == -1)
+		{
+			fprintf(stderr, "[main] Error opening file %s. FILE: %s. LINE %d.\n", codebook_path, __FILE__, __LINE__);
+			return ERR;
+		}
+
+		char esc;
+		leaf * codebook = read_Codebook(fd, &esc, FALSE);
+		if (codebook == NULL)
+		{
+			fprintf(stderr, "[main] Error in read_Codebook. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+			return ERR;
+		}
+		close(fd);
+
 		if(recursive)
 		{
-			//char * path = argv[i++];
-			//char * codebook = argv[i];
+			/* fetch dirpath and create empty file node to serve as head of linked list */
+			FileNode * root_FileNode = insert_fileNode(NULL, NULL);
+			fetch_files_recursively(path, root_FileNode, 1);
+
+			/* for each file node, decompress the file */
+			FileNode * ptr = root_FileNode;
+			while (ptr)
+			{
+				if (decompress_file_Driver(ptr->file_path, codebook, esc) != 0)
+				{
+					fprintf(stderr, "[main] Error decompressing file %s. FILE: %s. LINE: %d.\n", ptr->file_path, __FILE__, __LINE__);
+					return ERR;
+				}
+				ptr = ptr->next;
+			}
+			
+			/* free linked list data */
+			free_FileNodeList(root_FileNode);
 		}
 		else
 		{
-			char * file_path = argv[i++];
-			char * codebook_path = argv[i];
-
-			// start by reading the compressed file
-			int fd = open(file_path, O_RDONLY, 00600);
-			if (fd == -1)
+			if (decompress_file_Driver(path, codebook, esc) != 0)
 			{
-				fprintf(stderr, "[main] Error opening file %s. FILE: %s. LINE %d.\n", file_path, __FILE__, __LINE__);
+				fprintf(stderr, "[main] Error decompressing file %s. FILE: %s. LINE: %d.\n", path, __FILE__, __LINE__);
 				return ERR;
 			}
-			int size = lseek(fd, 0, SEEK_END);
-			//printf("%d\n", size);
-			char * buffer = (char *) malloc(sizeof(char) * size);
-			if (buffer == NULL)
-			{
-				fprintf(stderr, "[main] NULL returned by malloc. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
-				return ERR;
-			}
-			lseek(fd, 0, SEEK_SET);
-			if (better_read(fd, buffer, size, __FILE__, __LINE__) != 1)
-			{
-				fprintf(stderr, "[main] better_read returned error. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
-				return ERR;
-			}
-			close(fd);
-
-			// read the stored codebook and generate Huffman Tree
-			fd = open(codebook_path, O_RDONLY, 00600);
-			if (fd == -1)
-			{
-				fprintf(stderr, "[main] Error opening file %s. FILE: %s. LINE %d.\n", codebook_path, __FILE__, __LINE__);
-				return ERR;
-			}
-			char esc;
-			leaf * codebook = read_Codebook(fd, &esc, FALSE);
-			close(fd);
-
-			// remove the '.hcz' extension from the compressed path
-			int path_size = strlen(file_path) - 4*sizeof(char);
-			char * path = (char *) malloc(sizeof(char) * path_size+1);
-			if (path == NULL)
-			{
-				fprintf(stderr, "[main] NULL returned by malloc. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
-				return ERR;
-			}
-			strncpy(path, file_path, path_size);
-			path[path_size] = '\0';
-
-			// create/open file at decompressed path
-    			fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 00600);
-			free(path);
-			// decompress file then write to original location
-			decompress_file(fd, buffer, size, codebook, esc);
-
-			// free and close resources
-			//traverse(codebook);
-			free_full_tree(codebook);
-			free(buffer);
-			close(fd);
 		}
+
+		/* Free allocated memory for codebook */
+		free_huff(codebook);
 	}
 	return 0;
 }

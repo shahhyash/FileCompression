@@ -185,7 +185,6 @@ int fetch_files_recursively(char * dirpath, FileNode * root, int mode)
 	DIR * dirdes = opendir(dirpath);
 	struct dirent * item = readdir(dirdes);
 
-
 	/* loop through directory until no further items are left */
 	while (item)
 	{
@@ -214,12 +213,16 @@ int fetch_files_recursively(char * dirpath, FileNode * root, int mode)
 
 		/* if item is a directory, recursively search all of it's children */
 		if (item->d_type == DT_DIR)
+		{
 			fetch_files_recursively(child_dirpath, root, mode);
+			free(child_dirpath);
+		}
 
 		/* if item is a regular file, append it to the linked list as a file */
 		if (item->d_type == DT_REG)
 		{
-			if (!mode || strcmp(&(item->d_name[strlen(item->d_name)-4]), ".hcz")==0)
+			int is_compressed_file = (strcmp(&(item->d_name[strlen(item->d_name)-4]), ".hcz") == 0);
+			if ((mode==0 && !is_compressed_file) || (mode==1 && is_compressed_file))
 			{
 				printf("mode: %d, file: %s\n", mode, child_dirpath);
 				/* root node for parent call of this function should have a null pointer for file path */

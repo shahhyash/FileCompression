@@ -224,6 +224,63 @@ int fetch_files_recursively(char * dirpath, FileNode * root)
 	return 0;
 }
 
+int compress_file_Driver(char * file_path, leaf * codebook, char esc)
+{
+	/* Open and read contents of files, storing tokens into an array to make compression easier */
+	int fd = open(file_path, O_RDONLY, 00600);
+	if (fd == -1)
+	{
+		fprintf(stderr, "[main] Error opening file %s. FILE: %s. LINE %d.\n", file_path, __FILE__, __LINE__);
+		return ERR;
+	}
+	int size = lseek(fd, 0, SEEK_END);
+	//printf("%d\n", size);
+	char * buffer = (char *) malloc(sizeof(char) * size);
+	if (buffer == NULL)
+	{
+		fprintf(stderr, "[main] NULL returned by malloc. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+		return ERR;
+	}
+	lseek(fd, 0, SEEK_SET);
+	if (better_read(fd, buffer, size, __FILE__, __LINE__) != 1)
+	{
+		fprintf(stderr, "[main] better_read returned error. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+		return ERR;
+	}
+	Token * t = tokenize(buffer, size);
+	free(buffer);
+	close(fd);
+
+	/* Create a new file with the same name and the hcz extension and store compressed data in it. */
+	char * file_name = (char*)malloc(sizeof(char)*(strlen(file_path)+5));
+	memcpy(file_name, file_path, strlen(file_path));
+	memcpy(&file_name[strlen(file_path)], ".hcz", 4);
+	file_name[strlen(file_path)+4] = '\0';	
+
+	fd = open(file_name, O_WRONLY | O_CREAT | O_TRUNC, 00600);
+
+	if (compress_file(fd, t->tokens, t->num_tokens, codebook, esc) == 1)
+	{
+		fprintf(stderr, "[main] compress_file returned error. FILE: %s. LINE: %d\n", __FILE__, __LINE__);
+		return ERR;
+	}
+
+	/* Free allocated memory for tokens */
+	free(file_name);
+	
+	int k;
+	for(k = 0; k < t->num_tokens; k++)
+	{
+		free(t->tokens[k]);
+	}
+	free(t->tokens);
+	free(t);
+	
+	close(fd);
+
+	return 0;
+}
+
 int main(int argc, char *argv[])
 {
 	int build = FALSE, compress = FALSE, decompress = FALSE, recursive = FALSE;
@@ -346,83 +403,59 @@ int main(int argc, char *argv[])
 	}
 	else if (compress)
 	{
+		/* fetch command arguments for compress path and codebook path */
+		char * path = argv[i++];
+		char * codebook_path = argv[i];
+		
+		/* build tree from codebook file - only one so can be used across recursive and non-recursive modes */
+		int fd = open(codebook_path, O_RDONLY, 00600);
+		if (fd == -1)
+		{
+			fprintf(stderr, "[main] Error opening file %s. FILE: %s. LINE %d.\n", codebook_path, __FILE__, __LINE__);
+			return ERR;
+		}
+
+		char esc;
+		leaf * codebook = read_Codebook(fd, &esc, TRUE);
+		if (codebook == NULL)
+		{
+			fprintf(stderr, "[main] Error in read_Codebook. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+			return ERR;
+		}
+		close(fd);
+		
 		if(recursive)
 		{
-			//char * path = argv[i++];
-			//char * codebook = argv[i];
+			/* fetch dirpath and create empty file node to serve as head of linked list */
+			FileNode * root_FileNode = insert_fileNode(NULL, NULL);
+			fetch_files_recursively(path, root_FileNode);
+
+			/* for each file node, compress the file */
+			FileNode * ptr = root_FileNode;
+			while (ptr)
+			{
+				if (compress_file_Driver(ptr->file_path, codebook, esc) != 0)
+				{
+					fprintf(stderr, "[main] Error compressing file %s. FILE: %s. LINE: %d.\n", ptr->file_path, __FILE__, __LINE__);
+					return ERR;
+				}
+				ptr = ptr->next;
+			}
+			
+			/* free linked list data */
+			free_FileNodeList(root_FileNode);
 		}
 		else
 		{
-			// fetch command arguments
-			char * file_path = argv[i++];
-			char * codebook_path = argv[i];
-
-			// start by building a list of tokens for file to compress
-			int fd = open(file_path, O_RDONLY, 00600);
-			if (fd == -1)
+			if (compress_file_Driver(path, codebook, esc) != 0)
 			{
-				fprintf(stderr, "[main] Error opening file %s. FILE: %s. LINE %d.\n", file_path, __FILE__, __LINE__);
+				fprintf(stderr, "[main] Error compressing file %s. FILE: %s. LINE: %d.\n", path, __FILE__, __LINE__);
 				return ERR;
 			}
-			int size = lseek(fd, 0, SEEK_END);
-			//printf("%d\n", size);
-			char * buffer = (char *) malloc(sizeof(char) * size);
-			if (buffer == NULL)
-			{
-				fprintf(stderr, "[main] NULL returned by malloc. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
-				return ERR;
-			}
-			lseek(fd, 0, SEEK_SET);
-			if (better_read(fd, buffer, size, __FILE__, __LINE__) != 1)
-			{
-				fprintf(stderr, "[main] better_read returned error. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
-				return ERR;
-			}
-			Token * t = tokenize(buffer, size);
-			free(buffer);
-			close(fd);
-
-			// build tree from codebook
-			fd = open(codebook_path, O_RDONLY, 00600);
-			if (fd == -1)
-			{
-				fprintf(stderr, "[main] Error opening file %s. FILE: %s. LINE %d.\n", codebook_path, __FILE__, __LINE__);
-				return ERR;
-			}
-
-			char esc;
-			leaf * codebook = read_Codebook(fd, &esc, TRUE);
-			if (codebook == NULL)
-			{
-				fprintf(stderr, "[main] Error in read_Codebook. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
-				return ERR;
-			}
-			close(fd);
-
-			// finally, create a new file with the same name and hcz extension and compress it.
-			char * file_name = strcat(file_path, ".hcz");
-    			fd = open(file_name, O_WRONLY | O_CREAT | O_TRUNC, 00600);
-
-			if (compress_file(fd, t->tokens, t->num_tokens, codebook, esc) == 1)
-			{
-				fprintf(stderr, "[main] compress_file returned error. FILE: %s. LINE: %d\n", __FILE__, __LINE__);
-				return ERR;
-			}
-
-			// free allocated memory for codebook and tokens
-			int k;
-			for(k = 0; k < t->num_tokens; k++)
-			{
-				free(t->tokens[k]);
-			}
-			free(t->tokens);
-			free(t);
-			//printf("traverse\n");
-			//traverse(codebook);
-			free_full_tree(codebook);
-
-			close(fd);
 		}
+		
+		/* Free allocated memory for codebook */
+		free_full_tree(codebook);
 	}
 	else if (decompress)
 	{

@@ -17,10 +17,14 @@ void reverse_sanitize_token(char * token, char * out);
  */
 char sanitize_tokens(char ** tokens, int num_tokens, char input_esc);
 /*
- *      Builds HuffmanCodebook and writes it to a file based on the array of strings in
- *      token inputted of quantity num_tokens. Returns 0 on success, 1 otherwise.
+ *      Builds HuffmanCodebook and writes it to a file based on the AVL tree of tokens. 
+ *      Returns 0 on success, 1 otherwise.
  */
 int build_Codebook(leaf * root_AVL);
+/*
+ *      Builds AVL tree and returns the root based on the array of string tokens.
+ *      Returns root on success, NULL on failure.
+ */
 leaf * build_AVL(char ** tokens, int num_tokens, leaf * root_AVL);
 /*
  *      Writes compressed file with file descriptor filedes. The encoding for each token in tokens

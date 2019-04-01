@@ -12,7 +12,7 @@
 int get_balance(leaf * a)
 {
         int bal = get_tree_height(a->left) - get_tree_height(a->right);
-        //printf("word: %s BAL %d\n", a->word, bal);
+        /* printf("word: %s BAL %d\n", a->word, bal); */
         return bal;
 }
 
@@ -24,7 +24,7 @@ int get_tree_height(leaf * a)
         if (a == NULL)
                 return 0;
         int height = 1 + max(get_tree_height(a->right), get_tree_height(a->left));
-        //printf("word: %s HEIGHT %d\n", a->word, height-1);
+        /* printf("word: %s HEIGHT %d\n", a->word, height-1); */
         return height;
 }
 
@@ -64,7 +64,7 @@ leaf * insert(leaf * root, char * word)
         {
                 return create_leaf(word);
         }
-        //int layer  = *inserted;
+        /* int layer  = *inserted; */
         int compare = strcmp(root->word, word);
         if (compare == 0)
         {
@@ -83,25 +83,25 @@ leaf * insert(leaf * root, char * word)
         int balance = get_balance(root);
         if (balance > 1 && strcmp(root->left->word, word) == 1)
         {
-                //printf("Rotate left then right: %s %s\n", root->word, word);
-                //traverse(root);
+                /* printf("Rotate left then right: %s %s\n", root->word, word); */
+                /* traverse(root); */
                 root->left = rotate_left(root->left);
                 return rotate_right(root);
         }
         else if (balance > 1 && strcmp(root->left->word, word) == -1)
         {
-                //printf("Rotate right: %s %s\n", root->word, word);
+                /* printf("Rotate right: %s %s\n", root->word, word); */
                 return rotate_right(root);
         }
         else if (balance < -1 && strcmp(root->right->word, word) == 1)
         {
-                //printf("Rotate left: %s %s\n", root->word, word);
+                /* printf("Rotate left: %s %s\n", root->word, word); */
                 return rotate_left(root);
         }
         else if (balance < -1 && strcmp(root->right->word, word) == -1)
         {
-                //printf("Rotate right then left: %s %s\n", root->word, word);
-                //traverse(root);
+                /* printf("Rotate right then left: %s %s\n", root->word, word); */
+                /* traverse(root); */
                 root->right = rotate_right(root->right);
                 return rotate_left(root);
         }
@@ -179,9 +179,9 @@ void free_full_tree(leaf * root)
 {
         if (root != NULL)
         {
-                //printf("freeing: ");
-                //printf("%s", root->encoding);
-                //printf(" %s\n", root->word);
+                /* printf("freeing: "); */
+                /* printf("%s", root->encoding); */
+                /* printf(" %s\n", root->word); */
                 free_full_tree(root->left);
                 free_full_tree(root->right);
                 free(root->encoding);
@@ -232,7 +232,7 @@ int output(leaf * root, leaf ** arr, int i)
                 fprintf(stderr, "[output] null root passed for index %d. FILE: %s. LINE: %d.\n", i, __FILE__, __LINE__);
                 return i;
         }
-        //printf("root %d data: %s\n", i, root->word);
+        /* printf("root %d data: %s\n", i, root->word); */
 
         arr[i++] = root;
         if (root->right != NULL)
@@ -266,7 +266,7 @@ void print2D(leaf * root, int space)
                 a = root->encoding;
         }
         */
-        //printf("word: %s\tencoding: %s\tfreq: %d", root->word, a, root->freq);
+        /* printf("word: %s\tencoding: %s\tfreq: %d", root->word, a, root->freq); */
         printf("word: %s", root->word);
         print2D(root->left, space);
 }

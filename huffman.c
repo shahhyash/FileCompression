@@ -23,12 +23,12 @@ char * sanitize_token(char * token, char esc)
 {
         char old = token[0];
         free(token);
-        // Convert ascii dec to string
+        /* Convert ascii dec to string */
         char dec[3];
         dec[0] = old / 100 + 48;
         dec[1] = (old / 10) % 10 + 48;
         dec[2] = (old % 10) + 48;
-        //printf("code: %c%c%c\n", dec[0], dec[1], dec[2]);
+        /* printf("code: %c%c%c\n", dec[0], dec[1], dec[2]); */
         token = (char *) malloc(sizeof(char) * 5);
         token[0] = esc;
         strncpy(&token[1], dec, 3);
@@ -68,19 +68,24 @@ char sanitize_tokens(char ** tokens, int num_tokens, char input_esc)
                         if (new == NULL)
                         {
                                 fprintf(stderr, "[decompress_file] malloc returned NULL. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
-                                //return '\0';
                         }
                         strncpy(new, "!033", 4);
                         strncpy(&new[4], &tokens[i][1], strlen(&tokens[i][1]) );
                         new[3+strlen(tokens[i])] = '\0';
                         free(tokens[i]);
                         tokens[i] = new;
-                        //printf("%s\n", new);
                 }
         }
         return esc;
 }
 
+/*
+ *      Builds the AVL tree from a set of input tokens. This is useful for recursive
+ *      operations as we can just append tokens to the tree without using extra space for
+ *      repeated tokens.
+ * 
+ *      Returns the root of the AVL tree on success, NULL on failure.
+ */
 leaf * build_AVL(char ** tokens, int num_tokens, leaf * root_AVL)
 {
         sanitize_tokens(tokens, num_tokens, '\0');
@@ -102,8 +107,11 @@ leaf * build_AVL(char ** tokens, int num_tokens, leaf * root_AVL)
 }
 
 /*
- *      Builds HuffmanCodebook and writes it to a file based on the array of strings in
- *      token inputted of quantity num_tokens. Returns 0 on success, 1 otherwise.
+ *      Builds HuffmanCodebook and writes it to a file based on the AVL tree. 
+ *      Each leaf node of the AVL tree holds frequency count, so after sorting them, we can 
+ *      determine the huffman encoding of each node and write these properties to file.
+ * 
+ *      Returns 0 on success, 1 otherwise.
  */
 int build_Codebook(leaf * root_AVL)
 {
@@ -139,7 +147,6 @@ int build_Codebook(leaf * root_AVL)
                 return 0;
         }
 
-        //traverse(root_AVL);
         /* Sort frequencies */
         int i, size = get_tree_size(root_AVL);
         if (DEBUG) printf("Tree size: %d\n", size);
@@ -190,7 +197,6 @@ int build_Codebook(leaf * root_AVL)
                 fprintf(stderr, "[build_Codebook] encode_keys returned error.\n");
                 return 1;
         }
-        //traverse(root_Huff);
 
         /* write codebook to file using huffman tree */
         char * file_name = "HuffmanCodebook";
@@ -389,10 +395,11 @@ leaf * read_Codebook(int fd, char *esc, int compress)
         leaf * root = NULL;
 
         int start = 2, i = 2;
-        // Find escape character
+        
+        /* Find escape character */
         *esc = buffer[0];
         while (i < size) {
-                // read line by line
+                /* read line by line */
                 while(buffer[i] != '\t')
                         i++;
                 char * cur_encoding = (char *) malloc(sizeof(char) * (i - start + 1));
@@ -434,43 +441,6 @@ leaf * read_Codebook(int fd, char *esc, int compress)
                         leaf * cur_leaf = create_leaf(cur_word);
                         cur_leaf->encoding = cur_encoding;
                         root = huffman_insert(root, cur_leaf, cur_encoding, 0);
-                        /*
-                        int encoding_size = strlen(cur_encoding);
-                        leaf * parent_ptr = root;
-                        int j;
-                        for(j = 0; j < encoding_size-1; j++)
-                        {
-                                char move = cur_encoding[j];
-                                if(move == '0')
-                                {
-                                        if(parent_ptr->left == NULL)
-                                        {
-                                                parent_ptr->left = create_leaf(NULL);
-                                        }
-                                        parent_ptr = parent_ptr->left;
-                                }
-                                if(move == '1')
-                                {
-                                        if(parent_ptr->right == NULL)
-                                        {
-                                                parent_ptr->right = create_leaf(NULL);
-                                        }
-                                        parent_ptr = parent_ptr->right;
-                                }
-                        }
-
-                        char move = cur_encoding[j];
-
-                        if(move == '0')
-                        {
-                                parent_ptr->left = cur_leaf;
-                        }
-
-                        if(move == '1') {
-                                parent_ptr->right = cur_leaf;
-                        }
-                        */
-
                 }
                 free(cur_word);
                 i++;

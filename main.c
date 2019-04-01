@@ -57,7 +57,6 @@ Token * tokenize(char * s, int len)
 	found_chars = FALSE;
 	int start = 0;
 	int j = 0;
-	//printf("NUM TOKENS %d\n", out->num_tokens);
 	for (i = 0; i < len; i++)
 	{
 		if (isspace(s[i]) || iscntrl(s[i]) || s[i] < 33)
@@ -67,7 +66,6 @@ Token * tokenize(char * s, int len)
 				out->tokens[j] = (char *) malloc(sizeof(char) * (i-start+1));
 				strncpy(out->tokens[j], &s[start], i-start);
 				out->tokens[j][i-start] = '\0';
-				//printf("%s\n", out->tokens[j]);
 				j++;
 				found_chars = FALSE;
 			}
@@ -86,7 +84,6 @@ Token * tokenize(char * s, int len)
 		out->tokens[j] = (char *) malloc(sizeof(char) * (i-start+1));
 		strncpy(out->tokens[j], &s[start], i-start);
 		out->tokens[j][i-start] = '\0';
-		//printf("%s\n", out->tokens[j]);
 		j++;
 		found_chars = FALSE;
 	}
@@ -103,7 +100,6 @@ leaf * build_AVL_Driver(char * file, leaf * root)
 		return NULL;
 	}
 	int size = lseek(fd, 0, SEEK_END);
-	//printf("%d\n", size);
 	char * buffer = (char *) malloc(sizeof(char) * size);
 	if (buffer == NULL)
 	{
@@ -262,7 +258,6 @@ int compress_file_Driver(char * file_path, leaf * codebook, char esc)
 		return ERR;
 	}
 	int size = lseek(fd, 0, SEEK_END);
-	//printf("%d\n", size);
 	char * buffer = (char *) malloc(sizeof(char) * size);
 	if (buffer == NULL)
 	{
@@ -319,7 +314,6 @@ int decompress_file_Driver(char * file_path, leaf * codebook, char esc)
 		return ERR;
 	}
 	int size = lseek(fd, 0, SEEK_END);
-	//printf("%d\n", size);
 	char * buffer = (char *) malloc(sizeof(char) * size);
 	if (buffer == NULL)
 	{

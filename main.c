@@ -184,13 +184,22 @@ int fetch_files_recursively(char * dirpath, FileNode * root, int mode)
 	/* open directory and skip over the first two relative paths */
 	DIR * dirdes = opendir(dirpath);
 	struct dirent * item = readdir(dirdes);
+	int no_items = FALSE;
 
 	/* loop through directory until no further items are left */
 	while (item)
 	{
-		printf("filename: %s\n", item->d_name);
-		if (!strcmp(item->d_name, ".") || !strcmp(item->d_name, ".."))
+		while (!strcmp(item->d_name, ".") || !strcmp(item->d_name, ".."))
+		{
 			item = readdir(dirdes);
+			if (!item)
+			{
+				no_items = TRUE;
+				break;
+			}
+		}
+		if (no_items)
+			break;
 		/* compute full relative path of child item */
 		int dirpath_len = strlen(dirpath);
 		int name_len = strlen(item->d_name);
@@ -435,9 +444,7 @@ int main(int argc, char *argv[])
 			/* fetch dirpath and create empty file node to serve as head of linked list */
 			char * path = argv[i];
 			FileNode * root_FileNode = insert_fileNode(NULL, NULL);
-			printf("starting recursion\n");
 			fetch_files_recursively(path, root_FileNode, 0);
-			printf("finished\n");
 
 			/* for each file node, append tokens to AVL tree */
 			FileNode * ptr = root_FileNode;

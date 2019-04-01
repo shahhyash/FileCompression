@@ -59,7 +59,8 @@ def grade(path, answer_path):
             if (line != line_ans):
                 print("Comparing " + str(file) + " to " + str(ans))
                 print("Error")
-                error = True
+                return True
+        return False
 
 
 def recursive():
@@ -83,7 +84,7 @@ def recursive():
     run_command(['./fileCompressor', '-d', '-R', name, 'HuffmanCodebook'])
     # compare with origin file
     delete_compressed(dir_path + "/recursive_test")
-    grade(dir_path + "/recursive_test", dir_path + "/recursive_test_ans")
+    return grade(dir_path + "/recursive_test", dir_path + "/recursive_test_ans")
 
 
 def main():
@@ -91,7 +92,10 @@ def main():
     name = "auto_test.txt"
     if len(sys.argv) == 2:
         if sys.argv[1] == "-R":
-            return recursive()
+            error = recursive()
+            if not error:
+                print("All tests passed!")
+            return
         else:
             name = sys.argv[1]
             f = open(name, "r+")

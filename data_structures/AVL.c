@@ -42,7 +42,13 @@ leaf * create_leaf(char * word)
         new->right = NULL;
         new->left = NULL;
         new->freq = 1;
-        new->word = word;
+        if (word != NULL)
+        {
+                new->word = (char *) malloc(sizeof(char) * (strlen(word)+1));
+                strcpy(new->word, word);
+        }
+        else
+                new->word = NULL;
         return new;
 }
 

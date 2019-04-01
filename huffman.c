@@ -84,7 +84,7 @@ char sanitize_tokens(char ** tokens, int num_tokens, char input_esc)
 leaf * build_AVL(char ** tokens, int num_tokens, leaf * root_AVL)
 {
         sanitize_tokens(tokens, num_tokens, '\0');
-        
+
         /* Count frequencies */
         int i;
         for (i = 0; i < num_tokens; i++)
@@ -113,7 +113,7 @@ int build_Codebook(leaf * root_AVL)
         }
 
         /* If both left and right of the AVL tree is NULL, then assume there's only one token to write */
-        if (!(root_AVL->left || root_AVL->right))
+        if (!(root_AVL->left && root_AVL->right))
         {
                 char * file_name = "HuffmanCodebook";
                 int fd = open(file_name, O_WRONLY | O_CREAT | O_TRUNC, 00600);
@@ -133,9 +133,12 @@ int build_Codebook(leaf * root_AVL)
                         fprintf(stderr, "[build_Codebook] Error returned by better_write. FILE: %s. LINE: %d\n", __FILE__, __LINE__);
                 }
                 close(fd);
+                free(buffer);
+                free(root_AVL->word);
+                free(root_AVL);
                 return 0;
         }
-        
+
         //traverse(root_AVL);
         /* Sort frequencies */
         int i, size = get_tree_size(root_AVL);
@@ -200,7 +203,7 @@ int build_Codebook(leaf * root_AVL)
         free(arr);
         free(h);
         free_huff(root_Huff);
-        free_tree(root_AVL);
+        free_full_tree(root_AVL);
 
         return 0;
 }
@@ -469,6 +472,7 @@ leaf * read_Codebook(int fd, char *esc, int compress)
                         */
 
                 }
+                free(cur_word);
                 i++;
                 start = i;
         }

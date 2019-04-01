@@ -123,9 +123,11 @@ leaf * build_AVL_Driver(char * file, leaf * root)
 	{
 		if(DEBUG) printf("Token #%d: %s\n", k, t->tokens[k]);
 	}
-	
 	leaf * ret_AVL = build_AVL(t->tokens, t->num_tokens, root);
-
+	for(k = 0; k < t->num_tokens; k++)
+	{
+		free(t->tokens[k]);
+	}
 	free(t->tokens);
 	free(t);
 
@@ -170,12 +172,12 @@ int free_FileNodeList(FileNode * root)
 	return 0;
 }
 
-/* 
- * This function takes in a path to a directory and recursively builds a linked list of child paths 
- * 
+/*
+ * This function takes in a path to a directory and recursively builds a linked list of child paths
+ *
  * The mode paramater assumes a value of either 0 or 1, where 0 -> build & compress, 1 -> decompress
  * In build & compress mode (0), the function appends all child files to the linked list
- * In decompress mode (1), the function only appends files with a '.hcz' extension to the linked list. 
+ * In decompress mode (1), the function only appends files with a '.hcz' extension to the linked list.
  */
 int fetch_files_recursively(char * dirpath, FileNode * root, int mode)
 {
@@ -183,10 +185,10 @@ int fetch_files_recursively(char * dirpath, FileNode * root, int mode)
 	DIR * dirdes = opendir(dirpath);
 	readdir(dirdes);
 	readdir(dirdes);
-	
+
 	/* memory used to store current directory item */
 	struct dirent * item = readdir(dirdes);
-	
+
 	/* loop through directory until no further items are left */
 	while (item)
 	{
@@ -269,7 +271,7 @@ int compress_file_Driver(char * file_path, leaf * codebook, char esc)
 	char * file_name = (char*)malloc(sizeof(char)*(strlen(file_path)+5));
 	memcpy(file_name, file_path, strlen(file_path));
 	memcpy(&file_name[strlen(file_path)], ".hcz", 4);
-	file_name[strlen(file_path)+4] = '\0';	
+	file_name[strlen(file_path)+4] = '\0';
 
 	fd = open(file_name, O_WRONLY | O_CREAT | O_TRUNC, 00600);
 
@@ -281,7 +283,7 @@ int compress_file_Driver(char * file_path, leaf * codebook, char esc)
 
 	/* Free allocated memory for tokens */
 	free(file_name);
-	
+
 	int k;
 	for(k = 0; k < t->num_tokens; k++)
 	{
@@ -289,7 +291,7 @@ int compress_file_Driver(char * file_path, leaf * codebook, char esc)
 	}
 	free(t->tokens);
 	free(t);
-	
+
 	close(fd);
 
 	return 0;
@@ -402,7 +404,7 @@ int main(int argc, char *argv[])
 			}
 
 			/* third argument should be file path regardless of operation */
-			char * path = argv[3];		
+			char * path = argv[3];
 			struct stat path_stat;
 			stat(path, &path_stat);
 
@@ -441,7 +443,7 @@ int main(int argc, char *argv[])
 				root_AVL = build_AVL_Driver(ptr->file_path, root_AVL);
 				ptr = ptr->next;
 			}
-			
+
 			/* free linked list data */
 			free_FileNodeList(root_FileNode);
 
@@ -457,6 +459,11 @@ int main(int argc, char *argv[])
 		{
 			char * file = argv[i];
 			leaf * root_AVL = build_AVL_Driver(file, NULL);
+			if (root_AVL == NULL)
+			{
+				fprintf(stderr, "[main] build_AVL_Driver returned NULL. Please enter a non blank file. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+				return ERR;
+			}
 			int ret = build_Codebook(root_AVL);
 			if (ret == 1)
 			{
@@ -470,7 +477,7 @@ int main(int argc, char *argv[])
 		/* fetch command arguments for compress path and codebook path */
 		char * path = argv[i++];
 		char * codebook_path = argv[i];
-		
+
 		/* build tree from codebook file - only one so can be used across recursive and non-recursive modes */
 		int fd = open(codebook_path, O_RDONLY, 00600);
 		if (fd == -1)
@@ -487,7 +494,7 @@ int main(int argc, char *argv[])
 			return ERR;
 		}
 		close(fd);
-		
+
 		if(recursive)
 		{
 			/* fetch dirpath and create empty file node to serve as head of linked list */
@@ -505,7 +512,7 @@ int main(int argc, char *argv[])
 				}
 				ptr = ptr->next;
 			}
-			
+
 			/* free linked list data */
 			free_FileNodeList(root_FileNode);
 		}
@@ -517,7 +524,7 @@ int main(int argc, char *argv[])
 				return ERR;
 			}
 		}
-		
+
 		/* Free allocated memory for codebook */
 		free_full_tree(codebook);
 	}
@@ -526,7 +533,7 @@ int main(int argc, char *argv[])
 		/* fetch command arguments for decompress path and codebook path */
 		char * path = argv[i++];
 		char * codebook_path = argv[i];
-		
+
 		/* build tree from codebook file - only one so can be used across recursive and non-recursive modes */
 		int fd = open(codebook_path, O_RDONLY, 00600);
 		if (fd == -1)
@@ -561,7 +568,7 @@ int main(int argc, char *argv[])
 				}
 				ptr = ptr->next;
 			}
-			
+
 			/* free linked list data */
 			free_FileNodeList(root_FileNode);
 		}
@@ -575,7 +582,7 @@ int main(int argc, char *argv[])
 		}
 
 		/* Free allocated memory for codebook */
-		free_huff(codebook);
+		free_full_tree(codebook);
 	}
 	return 0;
 }

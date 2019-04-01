@@ -100,6 +100,12 @@ leaf * build_AVL_Driver(char * file, leaf * root)
 		return NULL;
 	}
 	int size = lseek(fd, 0, SEEK_END);
+	/* if file is empty, then print an error output and return 0 so that recursive calls can continue operation on rest of files */
+	if (size == 0)
+	{
+		fprintf(stderr, "[build_codebook] File requested to build codebook from is empty.\n");
+		return 0;
+	}
 	char * buffer = (char *) malloc(sizeof(char) * size);
 	if (buffer == NULL)
 	{
@@ -267,6 +273,14 @@ int compress_file_Driver(char * file_path, leaf * codebook, char esc)
 		return ERR;
 	}
 	int size = lseek(fd, 0, SEEK_END);
+
+	/* if file is empty, then print an error output and return 0 so that recursive calls can continue comrpessing rest of files */
+	if (size == 0)
+	{
+		fprintf(stderr, "[compress_file] File requested for compression is empty.\n");
+		return 0;
+	}
+
 	char * buffer = (char *) malloc(sizeof(char) * size);
 	if (buffer == NULL)
 	{

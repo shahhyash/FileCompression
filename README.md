@@ -53,7 +53,7 @@ We defined the following struct to store each item in the Linked List:
 typedef struct _FileNode {
 	char * file_path;
 	struct _FileNode * next;
-} FileNo
+} FileNode;
 ```
 
 We ensured that we modularized our program for each operation, and this allowed us to iterate through this linked list of files and call compress/decompress on each of these files. As a result, whenever our program receives a recursive file, it fetches files, and iterates through the files and calls the operation requested on that file.
@@ -66,8 +66,4 @@ By doing this, we optimized our program by ensuring that we accounted for all to
 
 For safety, we ensured that the input received by our program is a valid directory path using `stat`. If it is not found to be a directory, we simply inform the user that the flag requires a directory input and cleanly exits.
 
-
-
-## Implementation Notes
-
-## Testing & Instrumentation
+## 

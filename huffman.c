@@ -118,6 +118,7 @@ int build_Codebook(leaf * root_AVL)
         if(!root_AVL)
         {
                 fprintf(stderr, "[build_Codebook] received a NULL input as the AVL tree. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+                return 1;
         }
 
         /* If both left and right of the AVL tree is NULL, then assume there's only one token to write */
@@ -139,6 +140,7 @@ int build_Codebook(leaf * root_AVL)
                 if (ret <= 0)
                 {
                         fprintf(stderr, "[build_Codebook] Error returned by better_write. FILE: %s. LINE: %d\n", __FILE__, __LINE__);
+                        return 1;
                 }
                 close(fd);
                 free(buffer);

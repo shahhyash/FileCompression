@@ -4,4 +4,6 @@ Similarly, we have implemented a recursive option (python3 grader.py -R)to rigor
 
 The HuffmanCodebook, AVL tree, and heap were checked on small test cases by hand to make sure that they worked properly. The AVL tree was printed with traverse(root) after elements were added to ensure that each rotation was performed in the correct instance.
 
-We also tested a few edge cases manually. We tested running
+We also tested a few edge cases manually. We ran fileCompressor with only one token and only two tokens to ensure that it built the codebook, compressed, and decompressed properly. We also manually tested to make sure erroneous cases gracefully exit. We tested blank file inputs, blank directory inputs, improper flags (which includes using a file for a directory and vice verse), and invalid names for files and directories.
+
+Due to the nature of our rigorous testing, there may be other typically trivial test cases that we did not write about here. Many of these are automatically tested by our autograding script.

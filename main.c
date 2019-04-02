@@ -465,14 +465,13 @@ int main(int argc, char *argv[])
 		{
 			/* fetch dirpath and create empty file node to serve as head of linked list */
 			char * path = argv[i];
-			DIR * dirdes = opendir(path);
-			struct dirent * item = readdir(dirdes);
-			if (item->d_type != DT_DIR)
+			struct stat path_stat;
+			stat(path, &path_stat);
+			if (!S_ISDIR(path_stat.st_mode))
 			{
 				fprintf(stderr, "[main] Error: Please only call recursion on directories. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
 				return ERR;
 			}
-			closedir(dirdes);
 			FileNode * root_FileNode = fetch_files_recursively(path, NULL, 0);
 
 			/* for each file node, append tokens to AVL tree */
@@ -529,13 +528,8 @@ int main(int argc, char *argv[])
 		/* fetch command arguments for compress path and codebook path */
 		char * path = argv[i++];
 		char * codebook_path = argv[i];
-		char * path2 = (char *) malloc(sizeof(char) * (3+strlen(codebook_path)));
-		path2[0] = '.';
-		path2[1] ='/';
-		strcpy(&path2[2], codebook_path);
 		struct stat path_stat;
-		stat(path2, &path_stat);
-		free(path2);
+		stat(codebook_path, &path_stat);
 		if (!S_ISREG(path_stat.st_mode))
 		{
 			fprintf(stderr, "[main] Error: Please call valid codebook files. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
@@ -561,14 +555,13 @@ int main(int argc, char *argv[])
 
 		if(recursive)
 		{
-			DIR * dirdes = opendir(path);
-			struct dirent * item = readdir(dirdes);
-			if (item->d_type != DT_DIR)
+			struct stat path_stat;
+			stat(path, &path_stat);
+			if (!S_ISDIR(path_stat.st_mode))
 			{
 				fprintf(stderr, "[main] Error: Please only call recursion on directories. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
 				return ERR;
 			}
-			closedir(dirdes);
 			/* fetch dirpath and create empty file node to serve as head of linked list */
 			FileNode * root_FileNode = fetch_files_recursively(path, NULL, 0);
 
@@ -589,15 +582,11 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
-			char * path1 = (char *) malloc(sizeof(char) * (3+strlen(path)));
-			path1[0] = '.';
-			path1[1] ='/';
-			strcpy(&path1[2], path);
 			struct stat path_stat;
-			stat(path1, &path_stat);
-			free(path1);
+			stat(path, &path_stat);
 			if (!S_ISREG(path_stat.st_mode))
 			{
+				free_full_tree(codebook);
 				fprintf(stderr, "[main] Error: Please call valid files. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
 				return ERR;
 			}
@@ -616,13 +605,8 @@ int main(int argc, char *argv[])
 		/* fetch command arguments for decompress path and codebook path */
 		char * path = argv[i++];
 		char * codebook_path = argv[i];
-		char * path2 = (char *) malloc(sizeof(char) * (3+strlen(codebook_path)));
-		path2[0] = '.';
-		path2[1] ='/';
-		strcpy(&path2[2], codebook_path);
 		struct stat path_stat;
-		stat(path2, &path_stat);
-		free(path2);
+		stat(codebook_path, &path_stat);
 		if (!S_ISREG(path_stat.st_mode))
 		{
 			fprintf(stderr, "[main] Error: Please call valid codebook files. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
@@ -648,14 +632,13 @@ int main(int argc, char *argv[])
 
 		if(recursive)
 		{
-			DIR * dirdes = opendir(path);
-			struct dirent * item = readdir(dirdes);
-			if (item->d_type != DT_DIR)
+			struct stat path_stat;
+			stat(path, &path_stat);
+			if (!S_ISDIR(path_stat.st_mode))
 			{
 				fprintf(stderr, "[main] Error: Please only call recursion on directories. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
 				return ERR;
 			}
-			closedir(dirdes);
 			/* fetch dirpath and create empty file node to serve as head of linked list */
 			FileNode * root_FileNode = fetch_files_recursively(path, NULL, 1);
 
@@ -676,13 +659,8 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
-			char * path1 = (char *) malloc(sizeof(char) * (3+strlen(path)));
-			path1[0] = '.';
-			path1[1] ='/';
-			strcpy(&path1[2], path);
 			struct stat path_stat;
-			stat(path1, &path_stat);
-			free(path1);
+			stat(path, &path_stat);
 			if (!S_ISREG(path_stat.st_mode))
 			{
 				fprintf(stderr, "[main] Error: Please call valid files. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);

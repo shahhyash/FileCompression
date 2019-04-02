@@ -30,7 +30,7 @@ def r_generate(path, answer_path):
             f = open(path + "/auto_test" + str(i) + ".txt", "w")
             f1 = open(answer_path + "/answers" + str(i) + ".txt", "w")
             # write a random file
-            length = r.randint(1, 10000)   # Number of characters in file
+            length = r.randint(1, 1000)   # Number of characters in file
             i = 0
             while i < length:
                 s = r.choice(string.printable)

@@ -22,7 +22,11 @@ We start the build proces by using the AVL tree to store tokens. We use the AVL 
 
 Next, we build a MinHeap by traversing through this AVL tree of elements with the priority factor as the frequency of occurence of each token. The MinHeap's `O(log(n))` time complexity allows us to quickly sort the tokens to prepare them for encoding using Huffman Codes as it serves as an ordered list of tokens.
 
-FInally, we build the Huffman Tree as it's structure allows us to quickly determine each token's encoding string. As we traverse through the entire tree, we keep track of left/right moves and build up the encoding string until we reach a leaf node. This operation gives us an `O(n)` time complexity for encoding keys as we only ever visit each token once. 
+Finally, we build the Huffman Tree as it's structure allows us to quickly determine each token's encoding string. As we traverse through the entire tree, we keep track of left/right moves and build up the encoding string until we reach a leaf node. This operation gives us an `O(n)` time complexity for encoding keys as we only ever visit each token once. 
+
+For the overall time complexity, we understand that we need `O(n)` time to insert all `n` tokens into the AVL tree. Insertion of each token into either the AVL tree or MinHeap takes `O(logn)` time. Therefore, without loss of generality, we get `O(n*log(n))` time complexity when running this process. 
+
+Regarding space complexity for this process, we have to account for the worst case on each of the three data structures we use. In our worst case, each of the `n` characters in our file could be a separate token, and thus, we could potentially have `n` nodes in our structures. Due to the nature of all three data structures, we can deduce that the space complexity for building the codebook is `O(n)`.
 
 ## Compressing Files
 
@@ -34,6 +38,10 @@ The flowchart outlines the compression process:
 
 We start by building an AVL tree from the `HuffmanCodebook` file which stores all available tokens and their respective encodings. After that, we iterate through the input file to fetch all tokens to compress, and lookup their respective encodings for each token, and write them, in order, in the compressed file. 
 
+We found the overall time complexity for this process to be dependent on the number of tokens in the file, which could be up to `n` characters. We use the AVL tree, once again, to store these tokens, and therefore, our bottlenecks reside in the lookup time, as well as insertion time for the AVL tree, giving us a big O time complexity for this process of `O(n*log(n))`.
+
+Regarding space complexity, we will be storing all tokens in memory to iterate through them for encoding purposes. Therefore, our big O space complexity for this process will be `O(n)`.
+
 ## Decompressing Files
 
 When decompressing fies, we employed the Huffman Tree to optimize the process. We leveraged the fact each encoding string reflected left/right moves for the binary tree when we searched for the token that was originally stored.
@@ -43,6 +51,10 @@ The flowchart outlines the decompression process:
 <img src="./diagrams/decompress-file.svg">
 
 We begin the decompressing process by reading the `HuffmanCodebook` file and loading its contents into a Huffman Tree. As previously stated, this data structure allows us to treat the encoding string as instructions for traversing the binary tree until we reach a token. This allows us to achieve a time complexity of `O(n)`, where `n` is the number of bits in the encoded string. Once we decode a token, can write it to the original file. 
+
+For decompression, we will be loading the tokens stored in our Huffman Codebook file, and simply building the Huffman Tree structure from it to decode all of our tokens. Because the HuffmanCodebook file has keys stored in pre-sorted order, our most time intensive operations include loading the tokens, and searching through them. Loading them will take `O(n)` time, and decoding takes `O(log(n))` time. Therefore, the big O time complexity for this process is `O(n*log(n))`.
+
+Regarding space complexity, we will be storing all tokens in memory so that we can decode all possible tokens which were encoded in the compressed file. Therefore, our big O space complexity for this process will be `O(n)`
 
 ## Recursive Operations
 
@@ -66,4 +78,22 @@ By doing this, we optimized our program by ensuring that we accounted for all to
 
 For safety, we ensured that the input received by our program is a valid directory path using `stat`. If it is not found to be a directory, we simply inform the user that the flag requires a directory input and cleanly exits.
 
-## 
+## Sanitizing Control Characters
+
+In order to ensure reliable compression and decompression of files, we had to ensure that our program would not be confused by control characters present in the input files. We realized that we couldn't simply use any obscure ASCII character for this as that in itself would serve as an obvious point of failure for our program, and we would essentially be playing the odds to see if it shows up in a test case.
+
+As a result, we employed a method where we would convert all control characters to their numerical ASCII equivalent and encode that using Huffman Codes as a token.
+
+For example, since the newline character ( `\n` ) holds the ASCII value of `010`, our sanitize function would convert the single character to the token string `!010`. 
+
+We use the exclamation point in the beginning of our encoded string so that we know to convert the numbers back to the character on decompress. As stated before, we're confident that this doesn't present a point of failure as we would eventually convert the exclamation point in the following way:
+
+```
+ASCII value of ! = 033
+```
+Therefore, we would store the encoded version as:
+```
+'!' => "!033"
+```
+
+Using this method enables us to ensure that all three of the required functions of this program (build, compress, decompress) will behave as expected on all types of inputs. 

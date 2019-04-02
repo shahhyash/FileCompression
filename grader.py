@@ -22,7 +22,7 @@ def run_command(cmd):
 def r_generate(path, answer_path):
     num_files = r.randint(1, 10)
     for i in range(num_files):
-        if r.random() > 0.9 and i > 10:
+        if r.random() > 0.9:
             run_command(['mkdir', path + "/recursive_test" + str(i)])
             run_command(['mkdir', answer_path + "/recursive_test_ans" + str(i)])
             r_generate(path+"/recursive_test" + str(i), answer_path+"/recursive_test_ans" + str(i))

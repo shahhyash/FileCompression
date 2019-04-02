@@ -83,7 +83,7 @@ char sanitize_tokens(char ** tokens, int num_tokens, char input_esc)
  *      Builds the AVL tree from a set of input tokens. This is useful for recursive
  *      operations as we can just append tokens to the tree without using extra space for
  *      repeated tokens.
- * 
+ *
  *      Returns the root of the AVL tree on success, NULL on failure.
  */
 leaf * build_AVL(char ** tokens, int num_tokens, leaf * root_AVL)
@@ -107,10 +107,10 @@ leaf * build_AVL(char ** tokens, int num_tokens, leaf * root_AVL)
 }
 
 /*
- *      Builds HuffmanCodebook and writes it to a file based on the AVL tree. 
- *      Each leaf node of the AVL tree holds frequency count, so after sorting them, we can 
+ *      Builds HuffmanCodebook and writes it to a file based on the AVL tree.
+ *      Each leaf node of the AVL tree holds frequency count, so after sorting them, we can
  *      determine the huffman encoding of each node and write these properties to file.
- * 
+ *
  *      Returns 0 on success, 1 otherwise.
  */
 int build_Codebook(leaf * root_AVL)
@@ -118,10 +118,11 @@ int build_Codebook(leaf * root_AVL)
         if(!root_AVL)
         {
                 fprintf(stderr, "[build_Codebook] received a NULL input as the AVL tree. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+                return 1;
         }
 
         /* If both left and right of the AVL tree is NULL, then assume there's only one token to write */
-        if (!(root_AVL->left && root_AVL->right))
+        if (root_AVL->left == NULL && root_AVL->right == NULL)
         {
                 char * file_name = "HuffmanCodebook";
                 int fd = open(file_name, O_WRONLY | O_CREAT | O_TRUNC, 00600);
@@ -139,6 +140,7 @@ int build_Codebook(leaf * root_AVL)
                 if (ret <= 0)
                 {
                         fprintf(stderr, "[build_Codebook] Error returned by better_write. FILE: %s. LINE: %d\n", __FILE__, __LINE__);
+                        return 1;
                 }
                 close(fd);
                 free(buffer);
@@ -148,7 +150,7 @@ int build_Codebook(leaf * root_AVL)
         }
 
         /* Sort frequencies */
-        int i, size = get_tree_size(root_AVL);
+        int size = get_tree_size(root_AVL);
         if (DEBUG) printf("Tree size: %d\n", size);
         leaf ** arr = output_driver(root_AVL);
         if (arr == NULL)
@@ -156,15 +158,7 @@ int build_Codebook(leaf * root_AVL)
                 fprintf(stderr, "[build_Codebook] NULL returned from output_driver. FILE: %s. LINE: %d\n", __FILE__, __LINE__);
                 return 1;
         }
-        for (i = 0; i < size; i++)
-        {
-                if (DEBUG) printf("Before heapify: Arr data %d: %s\n", i, arr[i]->word);
-        }
         heap * h = heapify(arr, size);
-        for (i = 0; i < size; i++)
-        {
-                if (DEBUG) printf("After heapify: Arr data %d: %s\n", i, arr[i]->word);
-        }
 
         /* Create Huffman Code tree */
         while (h->size > 1)
@@ -395,7 +389,7 @@ leaf * read_Codebook(int fd, char *esc, int compress)
         leaf * root = NULL;
 
         int start = 2, i = 2;
-        
+
         /* Find escape character */
         *esc = buffer[0];
         while (i < size) {

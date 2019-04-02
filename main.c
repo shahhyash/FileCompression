@@ -152,7 +152,7 @@ FileNode * insert_fileNode(FileNode * root, char * file_path)
 	if (root != NULL)
 	{
 		FileNode * ptr = root;
-		while(ptr->next)
+		while(ptr->next != NULL)
 			ptr = ptr->next;
 		ptr->next = file_node;
 		return root;
@@ -226,7 +226,7 @@ FileNode * fetch_files_recursively(char * dirpath, FileNode * root, int mode)
 		/* if item is a directory, recursively search all of it's children */
 		if (item->d_type == DT_DIR)
 		{
-			fetch_files_recursively(child_dirpath, root, mode);
+			root = fetch_files_recursively(child_dirpath, root, mode);
 
 		}
 
@@ -442,6 +442,11 @@ int main(int argc, char *argv[])
 				recursive = TRUE;
 				num_flags++;
 			}
+			else
+			{
+				fprintf(stderr, "Incorrect flags. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+				return ERR;
+			}
 		}
 		/* flags done */
 		else
@@ -460,12 +465,19 @@ int main(int argc, char *argv[])
 		{
 			/* fetch dirpath and create empty file node to serve as head of linked list */
 			char * path = argv[i];
+			struct stat path_stat;
+			stat(path, &path_stat);
+			if (!S_ISDIR(path_stat.st_mode))
+			{
+				fprintf(stderr, "[main] Error: Please only call recursion on directories. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+				return ERR;
+			}
 			FileNode * root_FileNode = fetch_files_recursively(path, NULL, 0);
 
 			/* for each file node, append tokens to AVL tree */
 			FileNode * ptr = root_FileNode;
 			leaf * root_AVL = NULL;
-			while (ptr)
+			while (ptr != NULL)
 			{
 				root_AVL = build_AVL_Driver(ptr->file_path, root_AVL);
 				ptr = ptr->next;
@@ -485,6 +497,18 @@ int main(int argc, char *argv[])
 		else
 		{
 			char * file = argv[i];
+			char * path = (char *) malloc(sizeof(char) * (3+strlen(file)));
+			path[0] = '.';
+			path[1] ='/';
+			strcpy(&path[2], file);
+			struct stat path_stat;
+			stat(path, &path_stat);
+			free(path);
+			if (!S_ISREG(path_stat.st_mode))
+			{
+				fprintf(stderr, "[main] Error: Please call valid files. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+				return ERR;
+			}
 			leaf * root_AVL = build_AVL_Driver(file, NULL);
 			if (root_AVL == NULL)
 			{
@@ -504,6 +528,13 @@ int main(int argc, char *argv[])
 		/* fetch command arguments for compress path and codebook path */
 		char * path = argv[i++];
 		char * codebook_path = argv[i];
+		struct stat path_stat;
+		stat(codebook_path, &path_stat);
+		if (!S_ISREG(path_stat.st_mode))
+		{
+			fprintf(stderr, "[main] Error: Please call valid codebook files. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+			return ERR;
+		}
 
 		/* build tree from codebook file - only one so can be used across recursive and non-recursive modes */
 		int fd = open(codebook_path, O_RDONLY, 00600);
@@ -524,12 +555,19 @@ int main(int argc, char *argv[])
 
 		if(recursive)
 		{
+			struct stat path_stat;
+			stat(path, &path_stat);
+			if (!S_ISDIR(path_stat.st_mode))
+			{
+				fprintf(stderr, "[main] Error: Please only call recursion on directories. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+				return ERR;
+			}
 			/* fetch dirpath and create empty file node to serve as head of linked list */
 			FileNode * root_FileNode = fetch_files_recursively(path, NULL, 0);
 
 			/* for each file node, compress the file */
 			FileNode * ptr = root_FileNode;
-			while (ptr)
+			while (ptr != NULL)
 			{
 				if (compress_file_Driver(ptr->file_path, codebook, esc) != 0)
 				{
@@ -544,6 +582,14 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
+			struct stat path_stat;
+			stat(path, &path_stat);
+			if (!S_ISREG(path_stat.st_mode))
+			{
+				free_full_tree(codebook);
+				fprintf(stderr, "[main] Error: Please call valid files. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+				return ERR;
+			}
 			if (compress_file_Driver(path, codebook, esc) != 0)
 			{
 				fprintf(stderr, "[main] Error compressing file %s. FILE: %s. LINE: %d.\n", path, __FILE__, __LINE__);
@@ -559,6 +605,13 @@ int main(int argc, char *argv[])
 		/* fetch command arguments for decompress path and codebook path */
 		char * path = argv[i++];
 		char * codebook_path = argv[i];
+		struct stat path_stat;
+		stat(codebook_path, &path_stat);
+		if (!S_ISREG(path_stat.st_mode))
+		{
+			fprintf(stderr, "[main] Error: Please call valid codebook files. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+			return ERR;
+		}
 
 		/* build tree from codebook file - only one so can be used across recursive and non-recursive modes */
 		int fd = open(codebook_path, O_RDONLY, 00600);
@@ -579,6 +632,13 @@ int main(int argc, char *argv[])
 
 		if(recursive)
 		{
+			struct stat path_stat;
+			stat(path, &path_stat);
+			if (!S_ISDIR(path_stat.st_mode))
+			{
+				fprintf(stderr, "[main] Error: Please only call recursion on directories. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+				return ERR;
+			}
 			/* fetch dirpath and create empty file node to serve as head of linked list */
 			FileNode * root_FileNode = fetch_files_recursively(path, NULL, 1);
 
@@ -599,6 +659,13 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
+			struct stat path_stat;
+			stat(path, &path_stat);
+			if (!S_ISREG(path_stat.st_mode))
+			{
+				fprintf(stderr, "[main] Error: Please call valid files. FILE: %s. LINE: %d.\n", __FILE__, __LINE__);
+				return ERR;
+			}
 			if (decompress_file_Driver(path, codebook, esc) != 0)
 			{
 				fprintf(stderr, "[main] Error decompressing file %s. FILE: %s. LINE: %d.\n", path, __FILE__, __LINE__);
